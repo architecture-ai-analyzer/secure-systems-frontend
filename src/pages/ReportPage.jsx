@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useProcessing } from '../hooks/useProcessing';
 import { PROCESSING_STATUS } from '../utils/constants';
-import { MockApiService } from '../services/mockApiService';
+// TODO: BACKEND_INTEGRATION - Substituído MockApiService por reportApiService para integração com backend
+// import { MockApiService } from '../services/mockApiService';
+import reportApiService from '../services/reportApiService.js';
 import { formatDate, getRiskLevelColor, getPriorityColor, downloadReport } from '../utils/helpers';
 
 const ReportPage = () => {
@@ -23,7 +25,9 @@ const ReportPage = () => {
       }
 
       try {
-        const reportData = await MockApiService.generateReport(upload.id, upload.fileName);
+        // TODO: BACKEND_INTEGRATION - Substituído MockApiService por reportApiService
+        // const reportData = await MockApiService.generateReport(upload.id, upload.fileName);
+        const reportData = await reportApiService.getReport(upload.id);
         setReport(reportData);
       } catch (err) {
         setError('Erro ao gerar relatório');
@@ -232,7 +236,7 @@ const ReportPage = () => {
                       <p className="text-sm text-gray-600 mb-2">{pattern.description}</p>
                       {pattern.benefits && (
                         <div className="text-sm text-gray-500">
-                          <strong>Benefícios:</strong> {pattern.benefits.join(', ')}
+                          <strong>Benefícios:</strong> {Array.isArray(pattern.benefits) ? pattern.benefits.join(', ') : pattern.benefits}
                         </div>
                       )}
                       {pattern.recommendation && (
