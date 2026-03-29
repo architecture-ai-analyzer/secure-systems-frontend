@@ -146,7 +146,7 @@ const ReportPage = () => {
                     <div className={`px-2 py-1 rounded text-xs font-medium ${getRiskLevelColor(component.criticality)}`}>
                       {component.criticality}
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">{component.connections} conexões</p>
+                    <p className="text-xs text-gray-500 mt-1">{component.connectionsCount || component.connections?.length || 0} conexões</p>
                   </div>
                 </div>
               ))}
