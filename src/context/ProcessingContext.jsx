@@ -2,6 +2,7 @@ import { useReducer } from 'react';
 import { ProcessingContext } from './ProcessingContext';
 import { PROCESSING_STATUS, PROCESSING_ACTIONS } from '../utils/constants';
 import { MockApiService } from '../services/mockApiService';
+import ReportApiService from '../services/reportApiService';
 
 const persistedUploads = JSON.parse(localStorage.getItem('fiap-uploads') || '[]');
 const initialUploads = persistedUploads.length > 0
@@ -118,6 +119,42 @@ export function ProcessingProvider({ children }) {
     return state.uploads.find(upload => upload.id === id);
   };
 
+  const getRealStatus = async (uploadId) => {
+    try {
+      const statusData = await ReportApiService.getProcessingStatus(uploadId);
+      
+      // Normalize status to match frontend constants
+      const normalizedStatus = statusData.status?.toLowerCase();
+      let frontendStatus;
+      switch (normalizedStatus) {
+        case 'recebido':
+          frontendStatus = PROCESSING_STATUS.RECEBIDO;
+          break;
+        case 'em processamento':
+        case 'em_processamento':
+          frontendStatus = PROCESSING_STATUS.EM_PROCESSAMENTO;
+          break;
+        case 'analisado':
+          frontendStatus = PROCESSING_STATUS.ANALISADO;
+          break;
+        case 'erro':
+          frontendStatus = PROCESSING_STATUS.ERRO;
+          break;
+        default:
+          frontendStatus = statusData.status; // Keep as is if not recognized
+      }
+      
+      return {
+        ...statusData,
+        status: frontendStatus
+      };
+    } catch (error) {
+      console.error('Error fetching real status:', error);
+      // Fallback to mock if real API fails
+      return MockApiService.getProcessingStatus(uploadId);
+    }
+  };
+
   const value = {
     uploads: state.uploads,
     currentUpload: state.currentUpload,
@@ -125,7 +162,8 @@ export function ProcessingProvider({ children }) {
     updateStatus,
     setCurrentUpload,
     clearCurrentUpload,
-    getUploadById
+    getUploadById,
+    getRealStatus
   };
 
   return (
