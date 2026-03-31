@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProcessing } from '../hooks/useProcessing';
 import FileUploader from '../components/FileUploader';
+import ReportApiService from '../services/reportApiService';
 
 const UploadPage = () => {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -19,10 +20,16 @@ const UploadPage = () => {
     setIsUploading(true);
     
     try {
-      // Simulate upload delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      // Add to local state first
       const uploadId = addUpload(selectedFile);
+      
+      // Try to upload to backend
+      try {
+        await ReportApiService.uploadDiagram(uploadId, selectedFile);
+        console.log('Upload to backend successful');
+      } catch (error) {
+        console.warn('Backend upload failed, continuing with local simulation:', error);
+      }
       
       // Show success message and redirect
       setTimeout(() => {

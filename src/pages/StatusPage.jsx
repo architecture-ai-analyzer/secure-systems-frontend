@@ -6,36 +6,82 @@ import { formatDate, formatFileSize, getStatusIcon, getStatusColor } from '../ut
 
 const StatusPage = () => {
   const { uploadId } = useParams();
-  const { getUploadById } = useProcessing();
+  const { getUploadById, getRealStatus, updateStatus } = useProcessing();
   const [refreshing, setRefreshing] = useState(false);
+  const [realStatus, setRealStatus] = useState(null);
   
   const upload = uploadId ? getUploadById(uploadId) : null;
+
+  // Fetch real status on mount and when uploadId changes
+  useEffect(() => {
+    const fetchRealStatus = async () => {
+      if (uploadId) {
+        try {
+          const status = await getRealStatus(uploadId);
+          setRealStatus(status);
+          
+          // Update local status if backend status is different
+          if (status.status && upload && status.status !== upload.status) {
+            updateStatus(uploadId, status.status);
+          }
+        } catch (error) {
+          console.error('Failed to fetch real status:', error);
+        }
+      }
+    };
+    fetchRealStatus();
+  }, [uploadId, getRealStatus, upload, updateStatus]);
 
   // Auto-refresh for processing items
   useEffect(() => {
     if (upload?.status === PROCESSING_STATUS.EM_PROCESSAMENTO) {
       const interval = setInterval(() => {
-        // This would trigger a re-render to show updated status
-        window.location.reload();
+        // Refresh real status
+        const fetchStatus = async () => {
+          try {
+            const status = await getRealStatus(uploadId);
+            setRealStatus(status);
+            
+            // Update local status if backend status changed
+            if (status.status && upload && status.status !== upload.status) {
+              updateStatus(uploadId, status.status);
+            }
+          } catch (error) {
+            console.error('Failed to refresh status:', error);
+          }
+        };
+        fetchStatus();
       }, 30000); // Refresh every 30 seconds
 
       return () => clearInterval(interval);
     }
-  }, [upload?.status]);
+  }, [upload?.status, uploadId, getRealStatus, upload, updateStatus]);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
+    try {
+      const status = await getRealStatus(uploadId);
+      setRealStatus(status);
+      
+      // Update local status if backend status changed
+      if (status.status && upload && status.status !== upload.status) {
+        updateStatus(uploadId, status.status);
+      }
+    } catch (error) {
+      console.error('Failed to refresh status:', error);
+    }
     setTimeout(() => {
-      window.location.reload();
+      setRefreshing(false);
     }, 1000);
   };
 
   const getProgressPercentage = () => {
-    switch (upload?.status) {
+    const status = realStatus?.status || upload?.status;
+    switch (status) {
       case PROCESSING_STATUS.RECEBIDO:
-        return 25;
+        return realStatus?.progress || 25;
       case PROCESSING_STATUS.EM_PROCESSAMENTO:
-        return 65;
+        return realStatus?.progress || 65;
       case PROCESSING_STATUS.ANALISADO:
         return 100;
       case PROCESSING_STATUS.ERRO:
@@ -46,36 +92,41 @@ const StatusPage = () => {
   };
 
   const getProcessingSteps = () => {
+    const status = realStatus?.status || upload?.status;
+    const isCompleted = status === PROCESSING_STATUS.ANALISADO;
+    const isError = status === PROCESSING_STATUS.ERRO;
+    const isProcessing = status === PROCESSING_STATUS.EM_PROCESSAMENTO;
+    
     const steps = [
       {
         id: 1,
         title: 'Recebimento do Arquivo',
         description: 'Arquivo PDF recebido e validado',
-        status: upload?.status === PROCESSING_STATUS.RECEBIDO ? 'current' : 
-                upload ? 'completed' : 'pending'
+        status: isCompleted || isError ? 'completed' : 
+                status === PROCESSING_STATUS.RECEBIDO ? 'current' : 'pending'
       },
       {
         id: 2,
         title: 'Análise de Componentes',
-        description: 'Identificando elementos da arquitetura',
-        status: upload?.status === PROCESSING_STATUS.EM_PROCESSAMENTO ? 'current' : 
-                upload?.status === PROCESSING_STATUS.ANALISADO ? 'completed' :
-                upload?.status === PROCESSING_STATUS.ERRO ? 'error' : 'pending'
+        description: realStatus?.currentStep || (isCompleted ? 'Análise concluída' : 'Identificando elementos da arquitetura'),
+        status: isCompleted ? 'completed' : 
+                isError ? 'error' :
+                isProcessing ? 'current' : 'pending'
       },
       {
         id: 3,
         title: 'Análise de Segurança',
-        description: 'Avaliando vulnerabilidades e riscos',
-        status: upload?.status === PROCESSING_STATUS.EM_PROCESSAMENTO ? 'current' : 
-                upload?.status === PROCESSING_STATUS.ANALISADO ? 'completed' :
-                upload?.status === PROCESSING_STATUS.ERRO ? 'error' : 'pending'
+        description: isCompleted ? 'Análise de segurança concluída' : 'Avaliando vulnerabilidades e riscos',
+        status: isCompleted ? 'completed' : 
+                isError ? 'error' :
+                isProcessing ? 'current' : 'pending'
       },
       {
         id: 4,
         title: 'Geração do Relatório',
-        description: 'Compilando análise técnica completa',
-        status: upload?.status === PROCESSING_STATUS.ANALISADO ? 'completed' :
-                upload?.status === PROCESSING_STATUS.ERRO ? 'error' : 'pending'
+        description: isCompleted ? 'Relatório gerado com sucesso' : 'Compilando análise técnica completa',
+        status: isCompleted ? 'completed' : 
+                isError ? 'error' : 'pending'
       }
     ];
 
@@ -83,13 +134,18 @@ const StatusPage = () => {
   };
 
   const getEstimatedTime = () => {
+    if (realStatus?.estimatedTimeRemaining) {
+      return realStatus.estimatedTimeRemaining;
+    }
+    
     if (!upload) return null;
     
     const createdTime = new Date(upload.createdAt);
     const currentTime = new Date();
     const elapsedMinutes = Math.floor((currentTime - createdTime) / 60000);
 
-    switch (upload.status) {
+    const status = realStatus?.status || upload.status;
+    switch (status) {
       case PROCESSING_STATUS.RECEBIDO:
         return 'Iniciando processamento em instantes...';
       case PROCESSING_STATUS.EM_PROCESSAMENTO: {
@@ -185,8 +241,8 @@ const StatusPage = () => {
               <div>
                 <span className="text-sm font-medium text-gray-500">Status Atual:</span>
                 <div className="mt-1">
-                  <span className={`status-badge ${getStatusColor(upload.status)}`}>
-                    {getStatusIcon(upload.status)} {upload.status}
+                  <span className={`status-badge ${getStatusColor(realStatus?.status || upload.status)}`}>
+                    {getStatusIcon(realStatus?.status || upload.status)} {realStatus?.status || upload.status}
                   </span>
                 </div>
               </div>
