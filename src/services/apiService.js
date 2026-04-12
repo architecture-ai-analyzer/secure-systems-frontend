@@ -1,5 +1,4 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-const DEFAULT_PROJECT_STORAGE_KEY = 'fiap-default-project-id';
 
 function mapErrorMessage(status, body) {
   if (status === 404) return 'Recurso nao encontrado.';
@@ -31,24 +30,14 @@ async function request(path, options = {}) {
 }
 
 export class ApiService {
-  static async ensureDefaultProjectId() {
-    const cached = localStorage.getItem(DEFAULT_PROJECT_STORAGE_KEY);
-    if (cached) return cached;
-
-    const project = await request('/v1/projects', {
+  static async createProject(name, description, ownerId) {
+    return request('/v1/projects', {
       method: 'POST',
-      body: JSON.stringify({
-        name: 'Projeto Integracao Frontend',
-        description: 'Projeto padrao para uploads via frontend',
-        ownerId: 'frontend-dev'
-      })
+      body: JSON.stringify({ name, description, ownerId })
     });
-
-    localStorage.setItem(DEFAULT_PROJECT_STORAGE_KEY, project.id);
-    return project.id;
   }
 
-  static async createUpload(file, projectId) {
+  static async createUpload(file, projectId, uploaderId = 'frontend-dev') {
     const formData = new FormData();
     formData.append('file', file);
     formData.append(
@@ -58,7 +47,7 @@ export class ApiService {
           JSON.stringify({
             filename: file.name,
             projectId,
-            uploaderId: 'frontend-dev'
+            uploaderId
           })
         ],
         { type: 'application/json' }

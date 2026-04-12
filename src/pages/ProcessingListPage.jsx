@@ -1,19 +1,26 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useProcessing } from '../hooks/useProcessing';
+import { useProject } from '../hooks/useProject';
+import ProjectSelector from '../components/ProjectSelector';
 import { PROCESSING_STATUS } from '../utils/constants';
 import { formatDate, formatFileSize, getStatusIcon, getStatusColor, truncateFileName } from '../utils/helpers';
 
 const ProcessingListPage = () => {
   const { uploads } = useProcessing();
+  const { currentProjectId, currentProject, projects, getProjectById } = useProject();
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
-  const [processingProgress] = useState(() => Math.random() * 40 + 30); // Fixed progress value
+  const [processingProgress] = useState(() => Math.random() * 40 + 30);
+
+  const projectScopedUploads = currentProjectId
+    ? uploads.filter((upload) => upload.projectId === currentProjectId)
+    : uploads;
 
   // Filter uploads
-  const filteredUploads = uploads.filter(upload => {
-    if (filter === 'all') return true;
-    return upload.status === filter;
+  const filteredUploads = projectScopedUploads.filter(upload => {
+    const statusMatch = filter === 'all' || upload.status === filter;
+    return statusMatch;
   });
 
   // Sort uploads
@@ -34,11 +41,11 @@ const ProcessingListPage = () => {
 
   const getStatusCounts = () => {
     return {
-      all: uploads.length,
-      [PROCESSING_STATUS.RECEBIDO]: uploads.filter(u => u.status === PROCESSING_STATUS.RECEBIDO).length,
-      [PROCESSING_STATUS.EM_PROCESSAMENTO]: uploads.filter(u => u.status === PROCESSING_STATUS.EM_PROCESSAMENTO).length,
-      [PROCESSING_STATUS.ANALISADO]: uploads.filter(u => u.status === PROCESSING_STATUS.ANALISADO).length,
-      [PROCESSING_STATUS.ERRO]: uploads.filter(u => u.status === PROCESSING_STATUS.ERRO).length,
+      all: projectScopedUploads.length,
+      [PROCESSING_STATUS.RECEBIDO]: projectScopedUploads.filter(u => u.status === PROCESSING_STATUS.RECEBIDO).length,
+      [PROCESSING_STATUS.EM_PROCESSAMENTO]: projectScopedUploads.filter(u => u.status === PROCESSING_STATUS.EM_PROCESSAMENTO).length,
+      [PROCESSING_STATUS.ANALISADO]: projectScopedUploads.filter(u => u.status === PROCESSING_STATUS.ANALISADO).length,
+      [PROCESSING_STATUS.ERRO]: projectScopedUploads.filter(u => u.status === PROCESSING_STATUS.ERRO).length,
     };
   };
 
@@ -52,8 +59,14 @@ const ProcessingListPage = () => {
           Lista de Processamento
         </h1>
         <p className="text-gray-600">
-          Acompanhe o status de todos os diagramas enviados para análise
+          {currentProject
+            ? `Acompanhe o status dos diagramas do projeto ${currentProject.name}`
+            : 'Acompanhe o status de todos os diagramas enviados para análise'}
         </p>
+      </div>
+
+      <div className="max-w-md mb-6">
+        <ProjectSelector includeAllOption label="Escopo do projeto" />
       </div>
 
       {/* Summary Cards */}
@@ -111,16 +124,18 @@ const ProcessingListPage = () => {
           </div>
 
           {/* Sort Options */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-fiap-blue focus:border-transparent"
-          >
-            <option value="newest">Mais Recentes</option>
-            <option value="oldest">Mais Antigos</option>
-            <option value="name">Nome do Arquivo</option>
-            <option value="status">Status</option>
-          </select>
+          <div className="flex gap-2">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-fiap-blue focus:border-transparent"
+            >
+              <option value="newest">Mais Recentes</option>
+              <option value="oldest">Mais Antigos</option>
+              <option value="name">Nome do Arquivo</option>
+              <option value="status">Status</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -156,6 +171,14 @@ const ProcessingListPage = () => {
                           {truncateFileName(upload.fileName)}
                         </h3>
                         <div className="text-sm text-gray-500 space-y-1">
+                          {upload.projectId && getProjectById(upload.projectId) && (
+                            <p className="flex items-center gap-1">
+                              <span>📁</span>
+                              <span className="font-medium text-gray-600">
+                                {getProjectById(upload.projectId).name}
+                              </span>
+                            </p>
+                          )}
                           <p>Tamanho: {formatFileSize(upload.fileSize)}</p>
                           <p>Upload: {formatDate(upload.createdAt)}</p>
                           <p>Atualização: {formatDate(upload.updatedAt)}</p>

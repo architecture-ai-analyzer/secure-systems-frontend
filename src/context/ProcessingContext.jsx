@@ -86,6 +86,9 @@ export function ProcessingProvider({ children }) {
       id: uploadPayload.id,
       fileName: uploadPayload.fileName,
       fileSize: uploadPayload.fileSize,
+      projectId: uploadPayload.projectId || null,
+      projectName: uploadPayload.projectName || null,
+      uploaderId: uploadPayload.uploaderId || null,
       status: uploadPayload.status || PROCESSING_STATUS.RECEBIDO,
       createdAt: uploadPayload.createdAt || now,
       updatedAt: uploadPayload.updatedAt || now
@@ -121,7 +124,9 @@ export function ProcessingProvider({ children }) {
         ...uploadData,
         status: frontendStatus,
         fileName: uploadData.filename,
-        fileSize: uploadData.sizeBytes
+        fileSize: uploadData.sizeBytes,
+        projectId: uploadData.projectId || null,
+        uploaderId: uploadData.uploaderId || null
       };
     } catch (error) {
       console.error('Error fetching real status:', error);

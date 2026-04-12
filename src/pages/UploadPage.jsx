@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useProcessing } from '../hooks/useProcessing';
+import { useProject } from '../hooks/useProject';
 import FileUploader from '../components/FileUploader';
 import { ApiService } from '../services/apiService';
 import { PROCESSING_STATUS } from '../utils/constants';
@@ -10,6 +11,7 @@ const UploadPage = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const { addUpload } = useProcessing();
+  const { currentProject, currentProjectId } = useProject();
   const navigate = useNavigate();
 
   const handleFileSelect = (file) => {
@@ -17,14 +19,17 @@ const UploadPage = () => {
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !currentProject) return;
 
     setIsUploading(true);
     setUploadError('');
     
     try {
-      const projectId = await ApiService.ensureDefaultProjectId();
-      const uploadResponse = await ApiService.createUpload(selectedFile, projectId);
+      const uploadResponse = await ApiService.createUpload(
+        selectedFile,
+        currentProject.id,
+        currentProject.ownerId || 'frontend-dev'
+      );
 
       const uploadId = uploadResponse.uploadId;
 
@@ -47,6 +52,9 @@ const UploadPage = () => {
         id: uploadId,
         fileName: selectedFile.name,
         fileSize: selectedFile.size,
+        projectId: currentProject.id,
+        projectName: currentProject.name,
+        uploaderId: currentProject.ownerId || 'frontend-dev',
         status,
         createdAt,
         updatedAt
@@ -78,6 +86,41 @@ const UploadPage = () => {
         </p>
       </div>
 
+      {/* Aviso de projeto não selecionado */}
+      {!currentProjectId && (
+        <div className="max-w-2xl mx-auto mb-6 rounded-lg border border-yellow-300 bg-yellow-50 p-4 flex items-start gap-3">
+          <span className="text-yellow-500 text-xl">⚠️</span>
+          <div>
+            <p className="text-sm font-medium text-yellow-800">
+              Nenhum projeto selecionado
+            </p>
+            <p className="text-sm text-yellow-700 mt-0.5">
+              Selecione ou crie um projeto antes de enviar.{' '}
+              <Link to="/projects" className="underline font-semibold hover:text-yellow-900">
+                Ir para Projetos
+              </Link>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Projeto selecionado */}
+      {currentProject && (
+        <div className="max-w-2xl mx-auto mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4 flex items-center gap-3">
+          <span className="text-blue-500 text-xl">📁</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-blue-900">Projeto selecionado</p>
+            <p className="text-sm text-blue-700 truncate">{currentProject.name}</p>
+          </div>
+          <Link
+            to="/projects"
+            className="shrink-0 text-xs text-blue-600 underline hover:text-blue-800"
+          >
+            Trocar
+          </Link>
+        </div>
+      )}
+
       {/* Upload Section */}
       <div className="max-w-2xl mx-auto">
         <div className="card p-8">
@@ -100,7 +143,7 @@ const UploadPage = () => {
           <div className="mt-8 flex justify-center">
             <button
               onClick={handleUpload}
-              disabled={!selectedFile || isUploading}
+              disabled={!selectedFile || isUploading || !currentProjectId}
               className={`
                 px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-200
                 ${selectedFile && !isUploading
