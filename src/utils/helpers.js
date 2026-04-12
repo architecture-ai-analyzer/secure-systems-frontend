@@ -21,12 +21,26 @@ export const formatDate = (dateString) => {
   });
 };
 
-export const validatePdfFile = (file) => {
+export const validateUploadFile = (file) => {
   const errors = [];
+
+  const allowedMimeTypes = new Set([
+    'application/pdf',
+    'image/png',
+    'image/jpg',
+    'image/jpeg'
+  ]);
+
+  const allowedExtensions = new Set(['pdf', 'png', 'jpg', 'jpeg']);
+
+  const fileName = file?.name || '';
+  const extension = fileName.includes('.')
+    ? fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase()
+    : '';
   
   // Check file type
-  if (file.type !== 'application/pdf') {
-    errors.push('Apenas arquivos PDF são aceitos');
+  if (!allowedMimeTypes.has(file.type) && !allowedExtensions.has(extension)) {
+    errors.push('Apenas arquivos PDF, PNG, JPG e JPEG são aceitos');
   }
   
   // Check file size (max 10MB)
@@ -45,6 +59,9 @@ export const validatePdfFile = (file) => {
     errors
   };
 };
+
+// Compatibilidade com chamadas existentes no projeto.
+export const validatePdfFile = validateUploadFile;
 
 export const getStatusIcon = (status) => {
   const icons = {

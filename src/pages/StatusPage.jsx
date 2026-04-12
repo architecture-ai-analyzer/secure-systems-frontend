@@ -34,7 +34,10 @@ const StatusPage = () => {
 
   // Auto-refresh for processing items
   useEffect(() => {
-    if (upload?.status === PROCESSING_STATUS.EM_PROCESSAMENTO) {
+    if (
+      upload?.status === PROCESSING_STATUS.RECEBIDO ||
+      upload?.status === PROCESSING_STATUS.EM_PROCESSAMENTO
+    ) {
       const interval = setInterval(() => {
         // Refresh real status
         const fetchStatus = async () => {

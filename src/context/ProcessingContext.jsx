@@ -2,7 +2,22 @@ import { useReducer } from 'react';
 import { ProcessingContext } from './ProcessingContext';
 import { PROCESSING_STATUS, PROCESSING_ACTIONS } from '../utils/constants';
 import { MockApiService } from '../services/mockApiService';
-import ReportApiService from '../services/reportApiService';
+import { ApiService } from '../services/apiService';
+
+function mapBackendStatusToFrontendStatus(status) {
+  const normalized = status?.toLowerCase();
+
+  switch (normalized) {
+    case 'pending':
+      return PROCESSING_STATUS.RECEBIDO;
+    case 'completed':
+      return PROCESSING_STATUS.ANALISADO;
+    case 'failed':
+      return PROCESSING_STATUS.ERRO;
+    default:
+      return PROCESSING_STATUS.RECEBIDO;
+  }
+}
 
 const persistedUploads = JSON.parse(localStorage.getItem('fiap-uploads') || '[]');
 const initialUploads = persistedUploads.length > 0
@@ -65,41 +80,19 @@ function processingReducer(state, action) {
 export function ProcessingProvider({ children }) {
   const [state, dispatch] = useReducer(processingReducer, initialState);
 
-  const addUpload = (file) => {
+  const addUpload = (uploadPayload) => {
+    const now = new Date().toISOString();
     const upload = {
-      id: Date.now().toString(),
-      fileName: file.name,
-      fileSize: file.size,
-      status: PROCESSING_STATUS.RECEBIDO,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      file: file
+      id: uploadPayload.id,
+      fileName: uploadPayload.fileName,
+      fileSize: uploadPayload.fileSize,
+      status: uploadPayload.status || PROCESSING_STATUS.RECEBIDO,
+      createdAt: uploadPayload.createdAt || now,
+      updatedAt: uploadPayload.updatedAt || now
     };
     
     dispatch({ type: PROCESSING_ACTIONS.ADD_UPLOAD, payload: upload });
-    
-    // Simulate processing progression
-    setTimeout(() => {
-      dispatch({ 
-        type: PROCESSING_ACTIONS.UPDATE_STATUS, 
-        payload: { id: upload.id, status: PROCESSING_STATUS.EM_PROCESSAMENTO }
-      });
-      
-      // Random completion time between 2-4 minutes for demo
-      const processingTime = Math.random() * 120000 + 120000; // 2-4 minutes
-      setTimeout(() => {
-        // 10% chance of error for realistic simulation
-        const hasError = Math.random() < 0.1;
-        const finalStatus = hasError ? PROCESSING_STATUS.ERRO : PROCESSING_STATUS.ANALISADO;
-        
-        dispatch({ 
-          type: PROCESSING_ACTIONS.UPDATE_STATUS, 
-          payload: { id: upload.id, status: finalStatus }
-        });
-      }, processingTime);
-      
-    }, 30000); // Start processing after 30 seconds
-    
+
     return upload.id;
   };
 
@@ -121,32 +114,14 @@ export function ProcessingProvider({ children }) {
 
   const getRealStatus = async (uploadId) => {
     try {
-      const statusData = await ReportApiService.getProcessingStatus(uploadId);
-      
-      // Normalize status to match frontend constants
-      const normalizedStatus = statusData.status?.toLowerCase();
-      let frontendStatus;
-      switch (normalizedStatus) {
-        case 'recebido':
-          frontendStatus = PROCESSING_STATUS.RECEBIDO;
-          break;
-        case 'em processamento':
-        case 'em_processamento':
-          frontendStatus = PROCESSING_STATUS.EM_PROCESSAMENTO;
-          break;
-        case 'analisado':
-          frontendStatus = PROCESSING_STATUS.ANALISADO;
-          break;
-        case 'erro':
-          frontendStatus = PROCESSING_STATUS.ERRO;
-          break;
-        default:
-          frontendStatus = statusData.status; // Keep as is if not recognized
-      }
-      
+      const uploadData = await ApiService.getUpload(uploadId);
+      const frontendStatus = mapBackendStatusToFrontendStatus(uploadData.status);
+
       return {
-        ...statusData,
-        status: frontendStatus
+        ...uploadData,
+        status: frontendStatus,
+        fileName: uploadData.filename,
+        fileSize: uploadData.sizeBytes
       };
     } catch (error) {
       console.error('Error fetching real status:', error);

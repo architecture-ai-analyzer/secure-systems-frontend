@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProcessing } from '../hooks/useProcessing';
 import FileUploader from '../components/FileUploader';
-import ReportApiService from '../services/reportApiService';
+import { ApiService } from '../services/apiService';
+import { PROCESSING_STATUS } from '../utils/constants';
 
 const UploadPage = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
   const { addUpload } = useProcessing();
   const navigate = useNavigate();
 
@@ -18,18 +20,37 @@ const UploadPage = () => {
     if (!selectedFile) return;
 
     setIsUploading(true);
+    setUploadError('');
     
     try {
-      // Add to local state first
-      const uploadId = addUpload(selectedFile);
-      
-      // Try to upload to backend
+      const projectId = await ApiService.ensureDefaultProjectId();
+      const uploadResponse = await ApiService.createUpload(selectedFile, projectId);
+
+      const uploadId = uploadResponse.uploadId;
+
+      let status = PROCESSING_STATUS.RECEBIDO;
+      let createdAt = new Date().toISOString();
+      let updatedAt = createdAt;
+
       try {
-        await ReportApiService.uploadDiagram(uploadId, selectedFile);
-        console.log('Upload to backend successful');
-      } catch (error) {
-        console.warn('Backend upload failed, continuing with local simulation:', error);
+        const backendUpload = await ApiService.getUpload(uploadId);
+        status = backendUpload.status?.toLowerCase() === 'completed'
+          ? PROCESSING_STATUS.ANALISADO
+          : PROCESSING_STATUS.RECEBIDO;
+        createdAt = backendUpload.createdAt || createdAt;
+        updatedAt = backendUpload.completedAt || backendUpload.createdAt || updatedAt;
+      } catch (statusError) {
+        console.warn('Could not fetch upload status after creation:', statusError);
       }
+
+      addUpload({
+        id: uploadId,
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size,
+        status,
+        createdAt,
+        updatedAt
+      });
       
       // Show success message and redirect
       setTimeout(() => {
@@ -39,6 +60,7 @@ const UploadPage = () => {
       
     } catch (error) {
       console.error('Upload failed:', error);
+      setUploadError(error.message || 'Falha ao enviar arquivo para o servico de upload.');
       setIsUploading(false);
     }
   };
@@ -51,7 +73,7 @@ const UploadPage = () => {
           Upload de Diagrama de Arquitetura
         </h1>
         <p className="text-gray-600">
-          Envie seu diagrama de arquitetura em PDF para receber uma análise técnica detalhada 
+          Envie seu diagrama de arquitetura em PDF, PNG, JPG ou JPEG para receber uma análise técnica detalhada 
           com foco em segurança, performance e recomendações arquiteturais.
         </p>
       </div>
@@ -67,6 +89,12 @@ const UploadPage = () => {
             onFileSelect={handleFileSelect}
             isUploading={isUploading}
           />
+
+          {uploadError && (
+            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {uploadError}
+            </div>
+          )}
 
           {/* Upload Button */}
           <div className="mt-8 flex justify-center">

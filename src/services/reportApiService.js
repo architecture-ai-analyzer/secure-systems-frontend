@@ -1,6 +1,6 @@
 // API Service com fallback para mock
 // Pode alternar entre backend real e mock
-const USE_MOCK = false; // Mude para true para usar mock
+const USE_MOCK = (import.meta.env.VITE_REPORTS_USE_MOCK || 'true') === 'true';
 
 import { MockApiService } from './mockApiService.js';
 

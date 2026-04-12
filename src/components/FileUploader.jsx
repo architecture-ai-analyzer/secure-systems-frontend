@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { validatePdfFile, formatFileSize } from '../utils/helpers';
+import { validateUploadFile, formatFileSize } from '../utils/helpers';
 
 const FileUploader = ({ onFileSelect, isUploading = false }) => {
   const [dragActive, setDragActive] = useState(false);
@@ -37,7 +37,7 @@ const FileUploader = ({ onFileSelect, isUploading = false }) => {
   };
 
   const handleFile = (file) => {
-    const validation = validatePdfFile(file);
+    const validation = validateUploadFile(file);
     
     if (validation.isValid) {
       setSelectedFile(file);
@@ -77,7 +77,7 @@ const FileUploader = ({ onFileSelect, isUploading = false }) => {
         <input
           ref={inputRef}
           type="file"
-          accept=".pdf"
+          accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpg,image/jpeg"
           onChange={handleChange}
           className="hidden"
           disabled={isUploading}
@@ -103,7 +103,7 @@ const FileUploader = ({ onFileSelect, isUploading = false }) => {
               ) : (
                 <div>
                   <p className="text-lg font-medium text-gray-700">
-                    Arraste e solte seu diagrama PDF aqui
+                    Arraste e solte seu arquivo aqui
                   </p>
                   <p className="text-sm text-gray-500">
                     ou clique para selecionar o arquivo
@@ -112,7 +112,7 @@ const FileUploader = ({ onFileSelect, isUploading = false }) => {
               )}
 
               <div className="text-xs text-gray-400 space-y-1">
-                <p>• Apenas arquivos PDF</p>
+                <p>• Formatos aceitos: PDF, PNG, JPG e JPEG</p>
                 <p>• Tamanho máximo: 10MB</p>
                 <p>• Formatos suportados: Diagramas de arquitetura, UML, fluxogramas</p>
               </div>
