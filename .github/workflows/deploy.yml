@@ -1,0 +1,101 @@
+name: Deploy Frontend to CloudFront
+
+on:
+  push:
+    branches:
+      - main
+      - homologation
+      - develop
+  pull_request:
+    branches:
+      - main
+      - homologation
+      - develop
+
+env:
+  AWS_REGION: us-east-2
+  PROJECT_NAME: ia-arch-analyzer
+  APP_NAME: secure-systems
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Run tests
+        run: npm run test
+        continue-on-error: true
+
+      - name: Build application
+        run: npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Determine environment
+        id: env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "BUCKET_SUFFIX=production" >> $GITHUB_ENV
+          elif [[ "${{ github.ref }}" == "refs/heads/homologation" ]]; then
+            echo "environment=homologation" >> $GITHUB_OUTPUT
+            echo "BUCKET_SUFFIX=homologation" >> $GITHUB_ENV
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "BUCKET_SUFFIX=dev" >> $GITHUB_ENV
+          fi
+
+      - name: Get S3 bucket name from Terraform outputs
+        id: terraform
+        run: |
+          cd infra
+          terraform init \
+            -backend-config="key=v1/frontend/${{ steps.env.outputs.environment }}/terraform.tfstate" \
+            -backend-config="bucket=tf-state-ai-arch-analyzer" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -upgrade
+          
+          S3_BUCKET=$(terraform output -raw s3_bucket_name)
+          DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id)
+          
+          echo "s3_bucket=${S3_BUCKET}" >> $GITHUB_OUTPUT
+          echo "distribution_id=${DISTRIBUTION_ID}" >> $GITHUB_OUTPUT
+          cd ..
+
+      - name: Upload to S3
+        run: |
+          aws s3 sync dist/ \
+            s3://${{ steps.terraform.outputs.s3_bucket }}/ \
+            --delete \
+            --cache-control "public, max-age=3600" \
+            --metadata "deployment-time=$(date -u +'%Y-%m-%dT%H:%M:%SZ'),git-commit=${GITHUB_SHA:0:7}"
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ steps.terraform.outputs.distribution_id }} \
+            --paths "/*"
