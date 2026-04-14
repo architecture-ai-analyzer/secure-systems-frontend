@@ -7,7 +7,7 @@ import { PROCESSING_STATUS } from '../utils/constants';
 // TODO: BACKEND_INTEGRATION - Substituído MockApiService por reportApiService para integração com backend
 // import { MockApiService } from '../services/mockApiService';
 import reportApiService from '../services/reportApiService.js';
-import { formatDate, getRiskLevelColor, getPriorityColor, downloadReport } from '../utils/helpers';
+import { formatDate, getRiskLevelColor, getPriorityColor } from '../utils/helpers';
 
 const ReportPage = () => {
   const { uploadId } = useParams();
@@ -66,8 +66,8 @@ const ReportPage = () => {
   }, [upload, isUploadInSelectedProject]);
 
   const handleDownloadReport = () => {
-    if (report) {
-      downloadReport(report, upload.fileName);
+    if (upload?.id) {
+      reportApiService.downloadReport(upload.id);
     }
   };
 
