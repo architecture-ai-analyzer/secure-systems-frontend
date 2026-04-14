@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useProcessing } from '../hooks/useProcessing';
+import { useProject } from '../hooks/useProject';
+import ProjectSelector from '../components/ProjectSelector';
 import { PROCESSING_STATUS } from '../utils/constants';
 // TODO: BACKEND_INTEGRATION - Substituído MockApiService por reportApiService para integração com backend
 // import { MockApiService } from '../services/mockApiService';
@@ -9,16 +11,39 @@ import { formatDate, getRiskLevelColor, getPriorityColor } from '../utils/helper
 
 const ReportPage = () => {
   const { uploadId } = useParams();
-  const { getUploadById } = useProcessing();
+  const navigate = useNavigate();
+  const { uploads, getUploadById } = useProcessing();
+  const { currentProject, currentProjectId } = useProject();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const upload = uploadId ? getUploadById(uploadId) : null;
+  const isUploadInSelectedProject = !currentProjectId || upload?.projectId === currentProjectId;
+
+  const getLatestReportUploadId = (projectId) => {
+    const scopedUploads = projectId
+      ? uploads.filter((item) => item.projectId === projectId)
+      : uploads;
+
+    return [...scopedUploads]
+      .filter((item) => item.status === PROCESSING_STATUS.ANALISADO)
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0]?.id;
+  };
+
+  const handleProjectChange = (projectId) => {
+    const nextUploadId = getLatestReportUploadId(projectId);
+    if (nextUploadId) {
+      navigate(`/reports/${nextUploadId}`);
+      return;
+    }
+
+    navigate('/reports');
+  };
 
   useEffect(() => {
     const generateReport = async () => {
-      if (!upload || upload.status !== PROCESSING_STATUS.ANALISADO) {
+      if (!upload || !isUploadInSelectedProject || upload.status !== PROCESSING_STATUS.ANALISADO) {
         setError('Relatório não disponível ou arquivo ainda em processamento');
         setLoading(false);
         return;
@@ -38,7 +63,7 @@ const ReportPage = () => {
     };
 
     generateReport();
-  }, [upload]);
+  }, [upload, isUploadInSelectedProject]);
 
   const handleDownloadReport = () => {
     if (upload?.id) {
@@ -49,6 +74,13 @@ const ReportPage = () => {
   if (loading) {
     return (
       <div className="p-6 lg:p-8">
+        <div className="max-w-md mb-6">
+          <ProjectSelector
+            includeAllOption
+            label="Projeto dos relatórios"
+            onChange={handleProjectChange}
+          />
+        </div>
         <div className="flex items-center justify-center min-h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-fiap-blue mx-auto mb-4"></div>
@@ -63,6 +95,13 @@ const ReportPage = () => {
   if (error || !report) {
     return (
       <div className="p-6 lg:p-8">
+        <div className="max-w-md mb-6">
+          <ProjectSelector
+            includeAllOption
+            label="Projeto dos relatórios"
+            onChange={handleProjectChange}
+          />
+        </div>
         <div className="card p-8 text-center">
           <div className="text-6xl mb-4">❌</div>
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Relatório Indisponível</h2>
@@ -82,6 +121,14 @@ const ReportPage = () => {
 
   return (
     <div className="p-6 lg:p-8">
+      <div className="max-w-md mb-6">
+        <ProjectSelector
+          includeAllOption
+          label="Projeto dos relatórios"
+          onChange={handleProjectChange}
+        />
+      </div>
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -92,6 +139,11 @@ const ReportPage = () => {
             <p className="text-gray-600">
               Análise completa do arquivo: <strong>{upload.fileName}</strong>
             </p>
+            {currentProject && (
+              <p className="text-sm text-gray-500">
+                Projeto: {currentProject.name}
+              </p>
+            )}
             <p className="text-sm text-gray-500">
               Gerado em: {formatDate(report.generatedAt)}
             </p>

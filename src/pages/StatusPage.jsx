@@ -1,21 +1,46 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useProcessing } from '../hooks/useProcessing';
+import { useProject } from '../hooks/useProject';
+import ProjectSelector from '../components/ProjectSelector';
 import { PROCESSING_STATUS } from '../utils/constants';
 import { formatDate, formatFileSize, getStatusIcon, getStatusColor } from '../utils/helpers';
 
 const StatusPage = () => {
   const { uploadId } = useParams();
-  const { getUploadById, getRealStatus, updateStatus } = useProcessing();
+  const navigate = useNavigate();
+  const { uploads, getUploadById, getRealStatus, updateStatus } = useProcessing();
+  const { currentProject, currentProjectId, getProjectById } = useProject();
   const [refreshing, setRefreshing] = useState(false);
   const [realStatus, setRealStatus] = useState(null);
   
   const upload = uploadId ? getUploadById(uploadId) : null;
+  const project = upload?.projectId ? getProjectById(upload.projectId) : null;
+  const isUploadInSelectedProject = !currentProjectId || upload?.projectId === currentProjectId;
+
+  const getLatestStatusUploadId = (projectId) => {
+    const scopedUploads = projectId
+      ? uploads.filter((item) => item.projectId === projectId)
+      : uploads;
+
+    return [...scopedUploads]
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0]?.id;
+  };
+
+  const handleProjectChange = (projectId) => {
+    const nextUploadId = getLatestStatusUploadId(projectId);
+    if (nextUploadId) {
+      navigate(`/status/${nextUploadId}`);
+      return;
+    }
+
+    navigate('/status');
+  };
 
   // Fetch real status on mount and when uploadId changes
   useEffect(() => {
     const fetchRealStatus = async () => {
-      if (uploadId) {
+      if (uploadId && isUploadInSelectedProject) {
         try {
           const status = await getRealStatus(uploadId);
           setRealStatus(status);
@@ -30,11 +55,17 @@ const StatusPage = () => {
       }
     };
     fetchRealStatus();
-  }, [uploadId, getRealStatus, upload, updateStatus]);
+  }, [uploadId, getRealStatus, isUploadInSelectedProject, upload, updateStatus]);
 
   // Auto-refresh for processing items
   useEffect(() => {
-    if (upload?.status === PROCESSING_STATUS.EM_PROCESSAMENTO) {
+    if (
+      isUploadInSelectedProject &&
+      (
+        upload?.status === PROCESSING_STATUS.RECEBIDO ||
+        upload?.status === PROCESSING_STATUS.EM_PROCESSAMENTO
+      )
+    ) {
       const interval = setInterval(() => {
         // Refresh real status
         const fetchStatus = async () => {
@@ -55,7 +86,7 @@ const StatusPage = () => {
 
       return () => clearInterval(interval);
     }
-  }, [upload?.status, uploadId, getRealStatus, upload, updateStatus]);
+  }, [upload?.status, uploadId, getRealStatus, isUploadInSelectedProject, upload, updateStatus]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -161,14 +192,23 @@ const StatusPage = () => {
     }
   };
 
-  if (!upload) {
+  if (!upload || !isUploadInSelectedProject) {
     return (
       <div className="p-6 lg:p-8">
+        <div className="max-w-md mb-6">
+          <ProjectSelector
+            includeAllOption
+            label="Projeto do status"
+            onChange={handleProjectChange}
+          />
+        </div>
         <div className="card p-8 text-center">
           <div className="text-6xl mb-4">❓</div>
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Upload Não Encontrado</h2>
           <p className="text-gray-600 mb-6">
-            O ID fornecido não corresponde a nenhum upload em nosso sistema.
+            {currentProjectId
+              ? 'O projeto selecionado não possui upload compatível com esta consulta.'
+              : 'O ID fornecido não corresponde a nenhum upload em nosso sistema.'}
           </p>
           <div className="flex gap-4 justify-center">
             <Link to="/processing" className="btn-secondary">
@@ -189,6 +229,14 @@ const StatusPage = () => {
 
   return (
     <div className="p-6 lg:p-8">
+      <div className="max-w-md mb-6">
+        <ProjectSelector
+          includeAllOption
+          label="Projeto do status"
+          onChange={handleProjectChange}
+        />
+      </div>
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -197,7 +245,9 @@ const StatusPage = () => {
               Status do Processamento
             </h1>
             <p className="text-gray-600">
-              Acompanhe o progresso da análise do seu diagrama
+              {currentProject
+                ? `Acompanhe o progresso da análise do projeto ${currentProject.name}`
+                : 'Acompanhe o progresso da análise do seu diagrama'}
             </p>
           </div>
           
@@ -235,6 +285,15 @@ const StatusPage = () => {
                 <span className="text-sm font-medium text-gray-500">Data do Upload:</span>
                 <p className="text-gray-800">{formatDate(upload.createdAt)}</p>
               </div>
+              {project && (
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Projeto:</span>
+                  <p className="text-gray-800 flex items-center gap-1">
+                    <span>📁</span>
+                    {project.name}
+                  </p>
+                </div>
+              )}
             </div>
             
             <div className="space-y-3">

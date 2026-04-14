@@ -6,6 +6,7 @@ const Layout = () => {
   const location = useLocation();
 
   const navigation = [
+    { name: 'Projetos', href: '/projects', icon: '📁' },
     { name: 'Upload de Diagrama', href: '/upload', icon: '📤' },
     { name: 'Lista de Processamento', href: '/processing', icon: '📋' },
     { name: 'Relatórios', href: '/reports', icon: '📊' },
@@ -16,6 +17,7 @@ const Layout = () => {
     return (
       location.pathname === path ||
       (path === '/upload' && location.pathname === '/') ||
+      (path === '/projects' && location.pathname === '/projects') ||
       (path === '/reports' && (location.pathname.startsWith('/reports/') || location.pathname.startsWith('/report/'))) ||
       (path === '/status' && location.pathname.startsWith('/status/'))
     );
