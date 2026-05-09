@@ -11,7 +11,12 @@ function mapBackendStatusToFrontendStatus(status) {
     case 'pending':
       return PROCESSING_STATUS.RECEBIDO;
     case 'completed':
+      return PROCESSING_STATUS.EM_PROCESSAMENTO;
+    case 'scanned_ok':
       return PROCESSING_STATUS.ANALISADO;
+    case 'quarantined':
+    case 'analysis_invalid':
+    case 'analysis_review_required':
     case 'failed':
       return PROCESSING_STATUS.ERRO;
     default:
