@@ -23,20 +23,6 @@ output "cloudfront_distribution_arn" {
   value       = aws_cloudfront_distribution.frontend.arn
 }
 
-output "ecr_repository_url" {
-  description = "ECR repository URL for pushing Docker images"
-  value       = aws_ecr_repository.frontend.repository_url
-}
-
-output "ecr_repository_arn" {
-  description = "ARN of the ECR repository"
-  value       = aws_ecr_repository.frontend.arn
-}
-
-output "ecr_repository_name" {
-  description = "Name of the ECR repository"
-  value       = aws_ecr_repository.frontend.name
-}
 
 output "cloudfront_oai_id" {
   description = "CloudFront Origin Access Identity ID"

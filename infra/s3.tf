@@ -1,6 +1,7 @@
 resource "aws_s3_bucket" "frontend" {
   bucket = local.s3_bucket_name
   tags   = local.common_tags
+  force_destroy = true
 }
 
 resource "aws_s3_bucket_versioning" "frontend" {

@@ -58,7 +58,7 @@ variable "cache_max_ttl" {
 variable "enable_ecr" {
   description = "Enable ECR repository for container images"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "ecr_scan_on_push" {

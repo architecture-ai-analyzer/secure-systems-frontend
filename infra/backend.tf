@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    bucket = "tf-state-ai-arch-analyzer"
+    bucket = "tf-state-ai-architecture-analyzer"
     key    = "v1/frontend/dev/terraform.tfstate"
     region = "us-east-2"
   }
