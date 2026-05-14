@@ -30,6 +30,12 @@ async function request(path, options = {}) {
 }
 
 export class ApiService {
+  static async getProjects() {
+    return request('/v1/projects', {
+      method: 'GET'
+    });
+  }
+
   static async createProject(name, description, ownerId) {
     return request('/v1/projects', {
       method: 'POST',
