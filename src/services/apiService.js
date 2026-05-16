@@ -37,7 +37,7 @@ export class ApiService {
     });
   }
 
-  static async createUpload(file, projectId, uploaderId = 'frontend-dev') {
+  static async createUpload(file, projectId, uploaderId = 'frontend-dev', templateId = null) {
     const formData = new FormData();
     formData.append('file', file);
     formData.append(
@@ -47,7 +47,8 @@ export class ApiService {
           JSON.stringify({
             filename: file.name,
             projectId,
-            uploaderId
+            uploaderId,
+            templateId
           })
         ],
         { type: 'application/json' }

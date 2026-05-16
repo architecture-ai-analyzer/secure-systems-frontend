@@ -10,6 +10,7 @@ const UploadPage = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [templateId, setTemplateId] = useState('template-tecnico');
   const { addUpload } = useProcessing();
   const { currentProject, currentProjectId } = useProject();
   const navigate = useNavigate();
@@ -28,7 +29,8 @@ const UploadPage = () => {
       const uploadResponse = await ApiService.createUpload(
         selectedFile,
         currentProject.id,
-        currentProject.ownerId || 'frontend-dev'
+        currentProject.ownerId || 'frontend-dev',
+        templateId
       );
 
       const uploadId = uploadResponse.uploadId;
@@ -127,7 +129,23 @@ const UploadPage = () => {
           <h2 className="text-xl font-semibold text-gray-800 mb-6">
             Selecionar Diagrama
           </h2>
-          
+
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
+              Tipo de Relatório (Template)
+            </label>
+            <select
+              value={templateId}
+              onChange={(e) => setTemplateId(e.target.value)}
+              disabled={isUploading}
+              className="w-full border border-gray-300 rounded-lg p-3 text-gray-700 bg-white focus:outline-none focus:border-fiap-blue focus:ring-1 focus:ring-fiap-blue transition-colors cursor-pointer"
+            >
+              <option value="template-tecnico">🛠️ Relatório Técnico (Deep Dive Arquitetural)</option>
+              <option value="template-executivo">💼 Relatório Executivo (Visão de Negócios/Custos)</option>
+              <option value="template-seguranca">🔒 Relatório de Segurança (SecOps & Compliance)</option>
+            </select>
+          </div>
+
           <FileUploader 
             onFileSelect={handleFileSelect}
             isUploading={isUploading}

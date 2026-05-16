@@ -136,6 +136,13 @@ const ReportPage = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Relatório de Análise Técnica
             </h1>
+            <p className="text-sm text-gray-500">
+              Gerado em: {formatDate(report.generatedAt)}
+            </p>
+            {/* NOVA LINHA */}
+            <p className="text-sm text-gray-500 mt-1">
+              Template Aplicado: <span className="font-semibold text-fiap-blue uppercase">{report.templateId || 'PADRÃO'}</span>
+            </p>
             <p className="text-gray-600">
               Análise completa do arquivo: <strong>{upload.fileName}</strong>
             </p>
