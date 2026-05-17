@@ -89,6 +89,46 @@ npm run build
 npm run preview
 ```
 
+### Build local com Terraform Gateway
+
+Para construir localmente usando a URL do gateway do Terraform, execute:
+
+```bash
+bash ./scripts/build-local.sh dev
+```
+
+Para outro ambiente, passe o nome do ambiente:
+
+```bash
+bash ./scripts/build-local.sh homologation
+bash ./scripts/build-local.sh production
+```
+
+Esse script faz:
+- `terraform init` no diretório `infra/`
+- lê `gateway_api_base_url` do output remoto
+- executa `npm run build` com `VITE_API_URL` definido
+
+### Terraform
+
+O projeto usa backend remoto no S3 e pode apontar para ambientes `dev`, `homologation` e `production`.
+
+```bash
+terraform init \
+  -backend-config="bucket=tf-state-ai-architecture-analyzer" \
+  -backend-config="region=us-east-2" \
+  -backend-config="key=v1/frontend/dev/terraform.tfstate"
+terraform plan -var-file=infra/envs/dev/terraform.tfvars
+```
+
+Para o gateway, o projeto lê o output `api_base_url` do state remoto com `terraform_remote_state`.
+
+Para verificar o valor no frontend:
+
+```bash
+terraform output -raw gateway_api_base_url
+```
+
 ### Linting
 
 ```bash

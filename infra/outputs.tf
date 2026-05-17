@@ -23,8 +23,12 @@ output "cloudfront_distribution_arn" {
   value       = aws_cloudfront_distribution.frontend.arn
 }
 
-
 output "cloudfront_oai_id" {
   description = "CloudFront Origin Access Identity ID"
   value       = aws_cloudfront_origin_access_identity.oai.id
+}
+
+output "gateway_api_base_url" {
+  description = "API Gateway base URL retrieved from the gateway stack remote state"
+  value       = data.terraform_remote_state.gateway.outputs.api_base_url
 }

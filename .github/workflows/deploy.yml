@@ -46,9 +46,6 @@ jobs:
         run: npm run test
         continue-on-error: true
 
-      - name: Build application
-        run: npm run build
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -69,22 +66,29 @@ jobs:
             echo "BUCKET_SUFFIX=dev" >> $GITHUB_ENV
           fi
 
-      - name: Get S3 bucket name from Terraform outputs
+      - name: Get Terraform outputs
         id: terraform
         run: |
           cd infra
           terraform init \
+            -backend-config="bucket=tf-state-ai-architecture-analyzer" \
             -backend-config="key=v1/frontend/${{ steps.env.outputs.environment }}/terraform.tfstate" \
-            -backend-config="bucket=tf-state-ai-arch-analyzer" \
             -backend-config="region=${{ env.AWS_REGION }}" \
             -upgrade
-          
+
           S3_BUCKET=$(terraform output -raw s3_bucket_name)
           DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id)
-          
+          GATEWAY_API_BASE_URL=$(terraform output -var="environment=${{ steps.env.outputs.environment }}" -raw gateway_api_base_url)
+
           echo "s3_bucket=${S3_BUCKET}" >> $GITHUB_OUTPUT
           echo "distribution_id=${DISTRIBUTION_ID}" >> $GITHUB_OUTPUT
+          echo "gateway_api_base_url=${GATEWAY_API_BASE_URL}" >> $GITHUB_OUTPUT
           cd ..
+
+      - name: Build application
+        env:
+          VITE_API_URL: ${{ steps.terraform.outputs.gateway_api_base_url }}
+        run: npm run build
 
       - name: Upload to S3
         run: |
@@ -93,6 +97,10 @@ jobs:
             --delete \
             --cache-control "public, max-age=3600" \
             --metadata "deployment-time=$(date -u +'%Y-%m-%dT%H:%M:%SZ'),git-commit=${GITHUB_SHA:0:7}"
+
+      - name: Verify uploaded files
+        run: |
+          aws s3 ls s3://${{ steps.terraform.outputs.s3_bucket }}/ --recursive | sort | tail -20
 
       - name: Invalidate CloudFront cache
         run: |
