@@ -1,11 +1,11 @@
 output "s3_bucket_name" {
   description = "Name of the S3 bucket for frontend assets"
-  value       = aws_s3_bucket.frontend.id
+  value       = data.aws_s3_bucket.frontend.id
 }
 
 output "s3_bucket_arn" {
   description = "ARN of the S3 bucket"
-  value       = aws_s3_bucket.frontend.arn
+  value       = data.aws_s3_bucket.frontend.arn
 }
 
 output "cloudfront_distribution_id" {
@@ -28,7 +28,7 @@ output "cloudfront_oai_id" {
   value       = aws_cloudfront_origin_access_identity.oai.id
 }
 
-output "gateway_api_base_url" {
-  description = "API Gateway base URL retrieved from the gateway stack remote state"
-  value       = data.terraform_remote_state.gateway.outputs.api_base_url
-}
+# output "gateway_api_base_url" {
+#   description = "API Gateway base URL for backend communication"
+#   value       = data.terraform_remote_state.gateway.outputs.api_base_url
+# }

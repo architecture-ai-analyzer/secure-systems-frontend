@@ -1,8 +1,38 @@
 // API Service com fallback para mock
 // Pode alternar entre backend real e mock
 const USE_MOCK = (import.meta.env.VITE_REPORTS_USE_MOCK || 'true') === 'true';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '');
 
 import { MockApiService } from './mockApiService.js';
+
+function mapErrorMessage(status, body) {
+  if (status === 404) return 'Recurso não encontrado.';
+  if (status === 400) return 'Requisição inválida.';
+  if (status >= 500) return 'Falha interna no servidor.';
+  return body?.message || 'Falha na comunicação com a API.';
+}
+
+async function request(path, options = {}) {
+  const hasBody = options.body !== undefined && options.body !== null;
+  const isFormData = hasBody && typeof FormData !== 'undefined' && options.body instanceof FormData;
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: {
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+      ...(options.headers || {})
+    },
+    ...options
+  });
+
+  const isJson = response.headers.get('content-type')?.includes('application/json');
+  const body = isJson ? await response.json() : null;
+
+  if (!response.ok) {
+    throw new Error(mapErrorMessage(response.status, body));
+  }
+
+  return body;
+}
 
 class ReportApiService {
   
@@ -15,21 +45,15 @@ class ReportApiService {
     }
 
     // Backend real
-    console.log('Calling REAL API for upload:', `http://localhost:8081/api/reports/${uploadId}`);
+    console.log('Calling REAL API for upload:', `${API_BASE_URL}/api/reports/${uploadId}`);
     const formData = new FormData();
     formData.append('file', file);
     
     try {
-      const response = await fetch(`http://localhost:8081/api/reports/${uploadId}`, {
+      return await request(`/api/reports/${uploadId}`, {
         method: 'POST',
         body: formData,
       });
-      
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
-      
-      return await response.json();
     } catch (error) {
       console.error('Upload error:', error);
       // Fallback para mock se backend falhar
@@ -45,15 +69,11 @@ class ReportApiService {
       return MockApiService.getProcessingStatus(uploadId);
     }
 
-    console.log('Calling REAL API for status:', `http://localhost:8081/api/reports/${uploadId}/status`);
+    console.log('Calling REAL API for status:', `${API_BASE_URL}/api/reports/${uploadId}/status`);
     try {
-      const response = await fetch(`http://localhost:8081/api/reports/${uploadId}/status`);
-      
-      if (!response.ok) {
-        throw new Error('Status fetch failed');
-      }
-      console.log('Real API response:', response.status);
-      return await response.json();
+      return await request(`/api/reports/${uploadId}/status`, {
+        method: 'GET'
+      });
     } catch (error) {
       console.error('Status error:', error);
       // Fallback para mock
@@ -69,13 +89,9 @@ class ReportApiService {
     }
 
     try {
-      const response = await fetch(`http://localhost:8081/api/reports/${uploadId}`);
-      
-      if (!response.ok) {
-        throw new Error('Report fetch failed');
-      }
-      
-      return await response.json();
+      return await request(`/api/reports/${uploadId}`, {
+        method: 'GET'
+      });
     } catch (error) {
       console.error('Report error:', error);
       // Fallback para mock
@@ -90,13 +106,9 @@ class ReportApiService {
     }
 
     try {
-      const response = await fetch(`http://localhost:8081/api/reports?page=${page}&size=${size}`);
-      
-      if (!response.ok) {
-        throw new Error('Reports list failed');
-      }
-      
-      return await response.json();
+      return await request(`/api/reports?page=${page}&size=${size}`, {
+        method: 'GET'
+      });
     } catch (error) {
       console.error('List error:', error);
       // Fallback para mock
@@ -121,7 +133,7 @@ class ReportApiService {
     }
 
     try {
-      const response = await fetch(`http://localhost:8081/api/reports/${uploadId}/download`);
+      const response = await fetch(`${API_BASE_URL}/api/reports/${uploadId}/download`);
       
       if (!response.ok) {
         throw new Error('Download failed');

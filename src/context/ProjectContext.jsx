@@ -1,6 +1,7 @@
-import { useReducer } from 'react';
+import { useReducer, useEffect } from 'react';
 import { ProjectContext } from './ProjectContext';
 import { PROJECT_ACTIONS } from '../utils/constants';
+import { ApiService } from '../services/apiService';
 
 const PROJECTS_STORAGE_KEY = 'fiap-projects';
 const SELECTED_PROJECT_KEY = 'fiap-selected-project';
@@ -10,7 +11,9 @@ const persistedSelectedId = localStorage.getItem(SELECTED_PROJECT_KEY) || null;
 
 const initialState = {
   projects: persistedProjects,
-  currentProjectId: persistedSelectedId
+  currentProjectId: persistedSelectedId,
+  isLoading: false,
+  error: null
 };
 
 function projectReducer(state, action) {
@@ -25,17 +28,56 @@ function projectReducer(state, action) {
       newState = { ...state, currentProjectId: action.payload };
       break;
 
+    case 'SET_LOADING':
+      newState = { ...state, isLoading: action.payload };
+      break;
+
+    case 'SET_PROJECTS':
+      newState = { ...state, projects: action.payload, error: null };
+      break;
+
+    case 'SET_ERROR':
+      newState = { ...state, error: action.payload, isLoading: false };
+      break;
+
     default:
       return state;
   }
 
-  localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(newState.projects));
-  localStorage.setItem(SELECTED_PROJECT_KEY, newState.currentProjectId || '');
+  if (action.type !== 'SET_LOADING' && action.type !== 'SET_ERROR') {
+    localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(newState.projects));
+  }
+  if (action.type === PROJECT_ACTIONS.SELECT_PROJECT) {
+    localStorage.setItem(SELECTED_PROJECT_KEY, newState.currentProjectId || '');
+  }
   return newState;
 }
 
 export function ProjectProvider({ children }) {
   const [state, dispatch] = useReducer(projectReducer, initialState);
+
+  // Carregar projetos do backend na primeira renderização
+  useEffect(() => {
+    const loadProjects = async () => {
+      // Se localStorage já tem projetos, não precisa carregar de novo
+      if (persistedProjects.length > 0) {
+        return;
+      }
+
+      dispatch({ type: 'SET_LOADING', payload: true });
+      try {
+        const projects = await ApiService.listProjects();
+        dispatch({ type: 'SET_PROJECTS', payload: projects || [] });
+      } catch (error) {
+        console.warn('Failed to load projects from backend:', error);
+        dispatch({ type: 'SET_ERROR', payload: error.message });
+        // Usar localStorage vazio se falhar
+        dispatch({ type: 'SET_PROJECTS', payload: [] });
+      }
+    };
+
+    loadProjects();
+  }, []);
 
   const addProject = (project) => {
     dispatch({ type: PROJECT_ACTIONS.ADD_PROJECT, payload: project });
@@ -55,7 +97,9 @@ export function ProjectProvider({ children }) {
     currentProject,
     addProject,
     selectProject,
-    getProjectById
+    getProjectById,
+    isLoading: state.isLoading,
+    error: state.error
   };
 
   return (
