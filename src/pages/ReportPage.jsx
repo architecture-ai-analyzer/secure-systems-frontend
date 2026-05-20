@@ -27,7 +27,7 @@ const ReportPage = () => {
       : uploads;
 
     return [...scopedUploads]
-      .filter((item) => item.status === PROCESSING_STATUS.ANALISADO)
+      .filter((item) => item.status === PROCESSING_STATUS.ANALYZED)
       .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0]?.id;
   };
 
@@ -43,7 +43,7 @@ const ReportPage = () => {
 
   useEffect(() => {
     const generateReport = async () => {
-      if (!upload || !isUploadInSelectedProject || upload.status !== PROCESSING_STATUS.ANALISADO) {
+      if (!upload || !isUploadInSelectedProject || upload.status !== PROCESSING_STATUS.ANALYZED) {
         setError('Relatório não disponível ou arquivo ainda em processamento');
         setLoading(false);
         return;

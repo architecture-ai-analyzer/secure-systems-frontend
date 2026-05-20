@@ -5,6 +5,7 @@ import { useProject } from '../hooks/useProject';
 import FileUploader from '../components/FileUploader';
 import { ApiService } from '../services/apiService';
 import { PROCESSING_STATUS } from '../utils/constants';
+import { normalizeUploadStatus } from '../utils/helpers';
 
 const UploadPage = () => {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -33,15 +34,13 @@ const UploadPage = () => {
 
       const uploadId = uploadResponse.uploadId;
 
-      let status = PROCESSING_STATUS.RECEBIDO;
+      let status = PROCESSING_STATUS.RECEIVED;
       let createdAt = new Date().toISOString();
       let updatedAt = createdAt;
 
       try {
         const backendUpload = await ApiService.getUpload(uploadId);
-        status = backendUpload.status?.toLowerCase() === 'completed'
-          ? PROCESSING_STATUS.ANALISADO
-          : PROCESSING_STATUS.RECEBIDO;
+        status = normalizeUploadStatus(backendUpload.status) || PROCESSING_STATUS.RECEIVED;
         createdAt = backendUpload.createdAt || createdAt;
         updatedAt = backendUpload.completedAt || backendUpload.createdAt || updatedAt;
       } catch (statusError) {

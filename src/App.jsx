@@ -20,7 +20,7 @@ function ReportsRedirect() {
     : uploads;
 
   const latestAnalyzedUpload = [...projectScopedUploads]
-    .filter((upload) => upload.status === PROCESSING_STATUS.ANALISADO)
+    .filter((upload) => upload.status === PROCESSING_STATUS.ANALYZED)
     .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
 
   const latestUpload = [...projectScopedUploads]
