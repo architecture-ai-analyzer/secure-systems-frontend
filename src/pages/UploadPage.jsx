@@ -34,13 +34,13 @@ const UploadPage = () => {
 
       const uploadId = uploadResponse.uploadId;
 
-      let status = PROCESSING_STATUS.RECEIVED;
+      let status = PROCESSING_STATUS.RECEBIDO;
       let createdAt = new Date().toISOString();
       let updatedAt = createdAt;
 
       try {
         const backendUpload = await ApiService.getUpload(uploadId);
-        status = normalizeUploadStatus(backendUpload.status) || PROCESSING_STATUS.RECEIVED;
+        status = normalizeUploadStatus(backendUpload.status) || PROCESSING_STATUS.RECEBIDO;
         createdAt = backendUpload.createdAt || createdAt;
         updatedAt = backendUpload.completedAt || backendUpload.createdAt || updatedAt;
       } catch (statusError) {

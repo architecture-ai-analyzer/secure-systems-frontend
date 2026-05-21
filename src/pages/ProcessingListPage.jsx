@@ -42,10 +42,10 @@ const ProcessingListPage = () => {
   const getStatusCounts = () => {
     return {
       all: projectScopedUploads.length,
-      [PROCESSING_STATUS.RECEIVED]: projectScopedUploads.filter(u => u.status === PROCESSING_STATUS.RECEIVED).length,
-      [PROCESSING_STATUS.PROCESSING]: projectScopedUploads.filter(u => u.status === PROCESSING_STATUS.PROCESSING).length,
-      [PROCESSING_STATUS.ANALYZED]: projectScopedUploads.filter(u => u.status === PROCESSING_STATUS.ANALYZED).length,
-      [PROCESSING_STATUS.ERROR]: projectScopedUploads.filter(u => u.status === PROCESSING_STATUS.ERROR).length,
+      [PROCESSING_STATUS.RECEBIDO]: projectScopedUploads.filter(u => u.status === PROCESSING_STATUS.RECEBIDO).length,
+      [PROCESSING_STATUS.EM_PROCESSAMENTO]: projectScopedUploads.filter(u => u.status === PROCESSING_STATUS.EM_PROCESSAMENTO).length,
+      [PROCESSING_STATUS.ANALISADO]: projectScopedUploads.filter(u => u.status === PROCESSING_STATUS.ANALISADO).length,
+      [PROCESSING_STATUS.ERRO]: projectScopedUploads.filter(u => u.status === PROCESSING_STATUS.ERRO).length,
     };
   };
 
@@ -76,19 +76,19 @@ const ProcessingListPage = () => {
           <div className="text-sm text-gray-600">Total</div>
         </div>
         <div className="card p-4 text-center">
-          <div className="text-2xl font-bold text-blue-600">{statusCounts[PROCESSING_STATUS.RECEIVED]}</div>
+          <div className="text-2xl font-bold text-blue-600">{statusCounts[PROCESSING_STATUS.RECEBIDO]}</div>
           <div className="text-sm text-gray-600">Recebidos</div>
         </div>
         <div className="card p-4 text-center">
-          <div className="text-2xl font-bold text-yellow-600">{statusCounts[PROCESSING_STATUS.PROCESSING]}</div>
+          <div className="text-2xl font-bold text-yellow-600">{statusCounts[PROCESSING_STATUS.EM_PROCESSAMENTO]}</div>
           <div className="text-sm text-gray-600">Processando</div>
         </div>
         <div className="card p-4 text-center">
-          <div className="text-2xl font-bold text-green-600">{statusCounts[PROCESSING_STATUS.ANALYZED]}</div>
+          <div className="text-2xl font-bold text-green-600">{statusCounts[PROCESSING_STATUS.ANALISADO]}</div>
           <div className="text-sm text-gray-600">Analisados</div>
         </div>
         <div className="card p-4 text-center">
-          <div className="text-2xl font-bold text-red-600">{statusCounts[PROCESSING_STATUS.ERROR]}</div>
+          <div className="text-2xl font-bold text-red-600">{statusCounts[PROCESSING_STATUS.ERRO]}</div>
           <div className="text-sm text-gray-600">Erros</div>
         </div>
       </div>
@@ -203,7 +203,7 @@ const ProcessingListPage = () => {
                       Ver Status
                     </Link>
                     
-                    {upload.status === PROCESSING_STATUS.ANALYZED && (
+                    {upload.status === PROCESSING_STATUS.ANALISADO && (
                       <Link
                         to={`/reports/${upload.id}`}
                         className="btn-primary text-sm"
@@ -212,7 +212,7 @@ const ProcessingListPage = () => {
                       </Link>
                     )}
 
-                    {upload.status === PROCESSING_STATUS.ERROR && (
+                    {upload.status === PROCESSING_STATUS.ERRO && (
                       <button className="btn-secondary text-sm text-red-600">
                         Reenviar
                       </button>
@@ -221,7 +221,7 @@ const ProcessingListPage = () => {
                 </div>
 
                 {/* Progress Bar for Processing */}
-                {upload.status === PROCESSING_STATUS.PROCESSING && (
+                {upload.status === PROCESSING_STATUS.EM_PROCESSAMENTO && (
                   <div className="mt-4">
                     <div className="bg-gray-200 rounded-full h-2">
                       <div 

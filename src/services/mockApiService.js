@@ -81,7 +81,7 @@ export class MockApiService {
         id: 'mock-completed-architecture-1',
         fileName: 'arquitetura-ecommerce-v1.pdf',
         fileSize: 2_458_624,
-        status: PROCESSING_STATUS.ANALYZED,
+        status: PROCESSING_STATUS.ANALISADO,
         createdAt,
         updatedAt
       }
@@ -212,7 +212,7 @@ export class MockApiService {
     return {
       id: uploadId,
       uploadId,
-      status: PROCESSING_STATUS.PROCESSING,
+      status: PROCESSING_STATUS.EM_PROCESSAMENTO,
       estimatedTimeRemaining: '2 minutos',
       currentStep: 'Analisando componentes de arquitetura...'
     };

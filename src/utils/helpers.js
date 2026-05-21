@@ -7,10 +7,17 @@ import {
 } from './constants';
 
 const LEGACY_STATUS_MAP = {
-  RECEBIDO: PROCESSING_STATUS.RECEIVED,
-  EM_PROCESSAMENTO: PROCESSING_STATUS.PROCESSING,
-  ANALISADO: PROCESSING_STATUS.ANALYZED,
-  ERRO: PROCESSING_STATUS.ERROR
+  // Inglês / wire legado
+  RECEIVED: PROCESSING_STATUS.RECEBIDO,
+  PROCESSING: PROCESSING_STATUS.EM_PROCESSAMENTO,
+  ANALYZED: PROCESSING_STATUS.ANALISADO,
+  ERROR: PROCESSING_STATUS.ERRO,
+  PENDING: PROCESSING_STATUS.RECEBIDO,
+  COMPLETED: PROCESSING_STATUS.ANALISADO,
+  FAILED: PROCESSING_STATUS.ERRO,
+  SCANNED_OK: PROCESSING_STATUS.ANALISADO,
+  QUARANTINED: PROCESSING_STATUS.ANALISADO,
+  INCONCLUSIVE: PROCESSING_STATUS.ERRO
 };
 
 const normalizeKey = (value) =>
@@ -115,10 +122,10 @@ export const validatePdfFile = validateUploadFile;
 export const getStatusIcon = (status) => {
   const normalized = normalizeUploadStatus(status);
   const icons = {
-    [PROCESSING_STATUS.RECEIVED]: '🕐',
-    [PROCESSING_STATUS.PROCESSING]: '⚙️',
-    [PROCESSING_STATUS.ANALYZED]: '✅',
-    [PROCESSING_STATUS.ERROR]: '❌'
+    [PROCESSING_STATUS.RECEBIDO]: '🕐',
+    [PROCESSING_STATUS.EM_PROCESSAMENTO]: '⚙️',
+    [PROCESSING_STATUS.ANALISADO]: '✅',
+    [PROCESSING_STATUS.ERRO]: '❌'
   };
 
   return icons[normalized] || '❓';
@@ -127,10 +134,10 @@ export const getStatusIcon = (status) => {
 export const getStatusColor = (status) => {
   const normalized = normalizeUploadStatus(status);
   const colors = {
-    [PROCESSING_STATUS.RECEIVED]: 'status-recebido',
-    [PROCESSING_STATUS.PROCESSING]: 'status-processando',
-    [PROCESSING_STATUS.ANALYZED]: 'status-analisado',
-    [PROCESSING_STATUS.ERROR]: 'status-erro'
+    [PROCESSING_STATUS.RECEBIDO]: 'status-recebido',
+    [PROCESSING_STATUS.EM_PROCESSAMENTO]: 'status-processando',
+    [PROCESSING_STATUS.ANALISADO]: 'status-analisado',
+    [PROCESSING_STATUS.ERRO]: 'status-erro'
   };
 
   return colors[normalized] || 'bg-gray-100 text-gray-800';

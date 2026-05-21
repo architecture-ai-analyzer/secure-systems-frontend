@@ -78,7 +78,7 @@ export function ProcessingProvider({ children }) {
       projectId: uploadPayload.projectId || null,
       projectName: uploadPayload.projectName || null,
       uploaderId: uploadPayload.uploaderId || null,
-      status: normalizeUploadStatus(uploadPayload.status) || PROCESSING_STATUS.RECEIVED,
+      status: normalizeUploadStatus(uploadPayload.status) || PROCESSING_STATUS.RECEBIDO,
       createdAt: uploadPayload.createdAt || now,
       updatedAt: uploadPayload.updatedAt || now
     };
@@ -107,7 +107,7 @@ export function ProcessingProvider({ children }) {
   const getRealStatus = async (uploadId) => {
     try {
       const uploadData = await ApiService.getUpload(uploadId);
-      const frontendStatus = normalizeUploadStatus(uploadData.status) || PROCESSING_STATUS.RECEIVED;
+      const frontendStatus = normalizeUploadStatus(uploadData.status) || PROCESSING_STATUS.RECEBIDO;
 
       const resolvedId = uploadData.id ?? uploadData.uploadId ?? uploadId;
 
