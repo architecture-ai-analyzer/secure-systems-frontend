@@ -24,7 +24,7 @@ variable "project_name" {
 variable "app_name" {
   description = "Application name"
   type        = string
-  default     = "secure-systems-frontend"
+  default     = "secure-systems"
 }
 
 variable "enable_cloudfront" {

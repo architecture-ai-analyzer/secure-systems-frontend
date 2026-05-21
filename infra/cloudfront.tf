@@ -10,7 +10,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   price_class         = "PriceClass_100" # US, EU, Hong Kong
 
   origin {
-    domain_name = aws_s3_bucket.frontend.bucket_regional_domain_name
+    domain_name = data.aws_s3_bucket.frontend.bucket_regional_domain_name
     origin_id   = "S3Frontend"
 
     s3_origin_config {

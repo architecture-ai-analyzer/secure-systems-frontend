@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+// Use gateway API URL from environment variable
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '');
 
 function mapErrorMessage(status, body) {
   if (status === 404) return 'Recurso nao encontrado.';
@@ -40,6 +41,18 @@ export class ApiService {
     return request('/v1/projects', {
       method: 'POST',
       body: JSON.stringify({ name, description, ownerId })
+    });
+  }
+
+  static async listProjects() {
+    return request('/v1/projects', {
+      method: 'GET'
+    });
+  }
+
+  static async getProject(projectId) {
+    return request(`/v1/projects/${projectId}`, {
+      method: 'GET'
     });
   }
 
