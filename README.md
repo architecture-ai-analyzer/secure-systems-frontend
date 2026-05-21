@@ -109,6 +109,39 @@ Esse script faz:
 - lê `gateway_api_base_url` do output remoto
 - executa `npm run build` com `VITE_API_URL` definido
 
+### Deploy Automático com Terraform Apply
+
+Para fazer o deploy automático do frontend após o `terraform apply`, o projeto está configurado para:
+
+1. Ler a URL do gateway do Terraform state remoto
+2. Construir o frontend com `VITE_API_URL` definido automaticamente
+3. Fazer upload dos arquivos para o S3
+4. Invalidar o cache do CloudFront
+
+Execute:
+
+```bash
+cd infra
+terraform init \
+  -backend-config="bucket=tf-state-ai-architecture-analyzer" \
+  -backend-config="region=us-east-2" \
+  -backend-config="key=v1/frontend/dev/terraform.tfstate"
+terraform plan -var-file=envs/dev/terraform.tfvars
+terraform apply -var-file=envs/dev/terraform.tfvars
+```
+
+Após o `apply`:
+- O frontend será construído com a URL correta do gateway
+- Os arquivos serão enviados para o S3
+- O CloudFront será invalidado
+- A URL de acesso estará disponível no output `cloudfront_domain_name`
+
+Para obter a URL de acesso:
+
+```bash
+terraform output cloudfront_domain_name
+```
+
 ### Terraform
 
 O projeto usa backend remoto no S3 e pode apontar para ambientes `dev`, `homologation` e `production`.

@@ -28,7 +28,12 @@ output "cloudfront_oai_id" {
   value       = aws_cloudfront_origin_access_identity.oai.id
 }
 
-# output "gateway_api_base_url" {
-#   description = "API Gateway base URL for backend communication"
-#   value       = data.terraform_remote_state.gateway.outputs.api_base_url
-# }
+output "gateway_api_base_url" {
+  description = "API Gateway base URL for backend communication"
+  value       = data.terraform_remote_state.gateway.outputs.api_base_url
+}
+
+output "frontend_url" {
+  description = "Complete URL to access the frontend application"
+  value       = "https://${aws_cloudfront_distribution.frontend.domain_name}"
+}

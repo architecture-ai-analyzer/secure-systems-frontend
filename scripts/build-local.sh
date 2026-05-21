@@ -22,4 +22,6 @@ echo "Gateway API URL: ${GATEWAY_API_BASE_URL}"
 echo "Building frontend with VITE_API_URL=${GATEWAY_API_BASE_URL}"
 cd "${SAVE_DIR}"
 
+# For local development, use the gateway URL directly
+# For production, CloudFront proxy will be used (no VITE_API_URL)
 VITE_API_URL="${GATEWAY_API_BASE_URL}" npm run build
