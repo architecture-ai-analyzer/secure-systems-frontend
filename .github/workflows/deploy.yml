@@ -66,7 +66,7 @@ jobs:
             echo "BUCKET_SUFFIX=dev" >> $GITHUB_ENV
           fi
 
-      - name: Get Terraform outputs
+      - name: Terraform plan/apply
         id: terraform
         run: |
           cd infra
@@ -75,6 +75,16 @@ jobs:
             -backend-config="key=v1/frontend/${{ steps.env.outputs.environment }}/terraform.tfstate" \
             -backend-config="region=${{ env.AWS_REGION }}" \
             -upgrade
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "Running terraform plan for PR..."
+            terraform plan \
+              -var-file="envs/${{ steps.env.outputs.environment }}/terraform.tfvars"
+          else
+            echo "Running terraform apply for push..."
+            terraform apply -auto-approve \
+              -var-file="envs/${{ steps.env.outputs.environment }}/terraform.tfvars"
+          fi
 
           S3_BUCKET=$(terraform output -raw s3_bucket_name)
           DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id)
@@ -86,11 +96,13 @@ jobs:
           cd ..
 
       - name: Build application
+        if: github.event_name != 'pull_request'
         env:
           VITE_API_URL: ${{ steps.terraform.outputs.gateway_api_base_url }}
         run: npm run build
 
       - name: Upload to S3
+        if: github.event_name != 'pull_request'
         run: |
           aws s3 sync dist/ \
             s3://${{ steps.terraform.outputs.s3_bucket }}/ \
@@ -99,10 +111,12 @@ jobs:
             --metadata "deployment-time=$(date -u +'%Y-%m-%dT%H:%M:%SZ'),git-commit=${GITHUB_SHA:0:7}"
 
       - name: Verify uploaded files
+        if: github.event_name != 'pull_request'
         run: |
           aws s3 ls s3://${{ steps.terraform.outputs.s3_bucket }}/ --recursive | sort | tail -20
 
       - name: Invalidate CloudFront cache
+        if: github.event_name != 'pull_request'
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ steps.terraform.outputs.distribution_id }} \
