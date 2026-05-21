@@ -4,7 +4,15 @@ import { useProcessing } from '../hooks/useProcessing';
 import { useProject } from '../hooks/useProject';
 import ProjectSelector from '../components/ProjectSelector';
 import { PROCESSING_STATUS } from '../utils/constants';
-import { formatDate, formatFileSize, getStatusIcon, getStatusColor } from '../utils/helpers';
+import {
+  formatDate,
+  formatFileSize,
+  getStatusIcon,
+  getStatusColor,
+  getStatusLabel,
+  getUploadProgressPercentage,
+  isRealStatusForUpload
+} from '../utils/helpers';
 
 const StatusPage = () => {
   const { uploadId } = useParams();
@@ -36,6 +44,15 @@ const StatusPage = () => {
 
     navigate('/status');
   };
+
+  const currentStatus = isRealStatusForUpload(realStatus, uploadId)
+    ? realStatus.status
+    : upload?.status;
+
+  // Clear stale API data when navigating between uploads
+  useEffect(() => {
+    setRealStatus(null);
+  }, [uploadId]);
 
   // Fetch real status on mount and when uploadId changes
   useEffect(() => {
@@ -106,24 +123,8 @@ const StatusPage = () => {
     }, 1000);
   };
 
-  const getProgressPercentage = () => {
-    const status = realStatus?.status || upload?.status;
-    switch (status) {
-      case PROCESSING_STATUS.RECEBIDO:
-        return realStatus?.progress || 25;
-      case PROCESSING_STATUS.EM_PROCESSAMENTO:
-        return realStatus?.progress || 65;
-      case PROCESSING_STATUS.ANALISADO:
-        return 100;
-      case PROCESSING_STATUS.ERRO:
-        return 100;
-      default:
-        return 0;
-    }
-  };
-
   const getProcessingSteps = () => {
-    const status = realStatus?.status || upload?.status;
+    const status = currentStatus;
     const isCompleted = status === PROCESSING_STATUS.ANALISADO;
     const isError = status === PROCESSING_STATUS.ERRO;
     const isProcessing = status === PROCESSING_STATUS.EM_PROCESSAMENTO;
@@ -175,7 +176,7 @@ const StatusPage = () => {
     const currentTime = new Date();
     const elapsedMinutes = Math.floor((currentTime - createdTime) / 60000);
 
-    const status = realStatus?.status || upload.status;
+    const status = currentStatus;
     switch (status) {
       case PROCESSING_STATUS.RECEBIDO:
         return 'Iniciando processamento em instantes...';
@@ -224,7 +225,7 @@ const StatusPage = () => {
   }
 
   const steps = getProcessingSteps();
-  const progressPercentage = getProgressPercentage();
+  const progressPercentage = getUploadProgressPercentage(currentStatus);
   const estimatedTime = getEstimatedTime();
 
   return (
@@ -300,8 +301,8 @@ const StatusPage = () => {
               <div>
                 <span className="text-sm font-medium text-gray-500">Status Atual:</span>
                 <div className="mt-1">
-                  <span className={`status-badge ${getStatusColor(realStatus?.status || upload.status)}`}>
-                    {getStatusIcon(realStatus?.status || upload.status)} {realStatus?.status || upload.status}
+                  <span className={`status-badge ${getStatusColor(currentStatus)}`}>
+                    {getStatusIcon(currentStatus)} {getStatusLabel(currentStatus)}
                   </span>
                 </div>
               </div>
@@ -332,8 +333,8 @@ const StatusPage = () => {
             <div className="bg-gray-200 rounded-full h-4">
               <div 
                 className={`h-4 rounded-full transition-all duration-500 ${
-                  upload.status === PROCESSING_STATUS.ERRO ? 'bg-red-500' : 
-                  upload.status === PROCESSING_STATUS.ANALISADO ? 'bg-green-500' : 'bg-fiap-blue'
+                  currentStatus === PROCESSING_STATUS.ERRO ? 'bg-red-500' : 
+                  currentStatus === PROCESSING_STATUS.ANALISADO ? 'bg-green-500' : 'bg-fiap-blue'
                 }`}
                 style={{ width: `${progressPercentage}%` }}
               ></div>
@@ -342,21 +343,21 @@ const StatusPage = () => {
 
           {/* Current Status Message */}
           <div className={`p-4 rounded-lg border ${
-            upload.status === PROCESSING_STATUS.ERRO ? 'bg-red-50 border-red-200' :
-            upload.status === PROCESSING_STATUS.ANALISADO ? 'bg-green-50 border-green-200' :
-            upload.status === PROCESSING_STATUS.EM_PROCESSAMENTO ? 'bg-blue-50 border-blue-200' :
+            currentStatus === PROCESSING_STATUS.ERRO ? 'bg-red-50 border-red-200' :
+            currentStatus === PROCESSING_STATUS.ANALISADO ? 'bg-green-50 border-green-200' :
+            currentStatus === PROCESSING_STATUS.EM_PROCESSAMENTO ? 'bg-blue-50 border-blue-200' :
             'bg-gray-50 border-gray-200'
           }`}>
             <p className={`font-medium ${
-              upload.status === PROCESSING_STATUS.ERRO ? 'text-red-800' :
-              upload.status === PROCESSING_STATUS.ANALISADO ? 'text-green-800' :
-              upload.status === PROCESSING_STATUS.EM_PROCESSAMENTO ? 'text-blue-800' :
+              currentStatus === PROCESSING_STATUS.ERRO ? 'text-red-800' :
+              currentStatus === PROCESSING_STATUS.ANALISADO ? 'text-green-800' :
+              currentStatus === PROCESSING_STATUS.EM_PROCESSAMENTO ? 'text-blue-800' :
               'text-gray-800'
             }`}>
-              {upload.status === PROCESSING_STATUS.RECEBIDO && 'Arquivo recebido com sucesso! O processamento será iniciado em instantes.'}
-              {upload.status === PROCESSING_STATUS.EM_PROCESSAMENTO && 'Análise em andamento. Nossos algoritmos estão examinando a arquitetura do seu sistema.'}
-              {upload.status === PROCESSING_STATUS.ANALISADO && 'Análise concluída! O relatório técnico completo está disponível para visualização.'}
-              {upload.status === PROCESSING_STATUS.ERRO && 'Erro durante o processamento. Nossa equipe foi notificada e está investigando o problema.'}
+              {currentStatus === PROCESSING_STATUS.RECEBIDO && 'Arquivo recebido com sucesso! O processamento será iniciado em instantes.'}
+              {currentStatus === PROCESSING_STATUS.EM_PROCESSAMENTO && 'Análise em andamento. Nossos algoritmos estão examinando a arquitetura do seu sistema.'}
+              {currentStatus === PROCESSING_STATUS.ANALISADO && 'Análise concluída! O relatório técnico completo está disponível para visualização.'}
+              {currentStatus === PROCESSING_STATUS.ERRO && 'Erro durante o processamento. Nossa equipe foi notificada e está investigando o problema.'}
             </p>
           </div>
         </div>

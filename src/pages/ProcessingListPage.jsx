@@ -4,7 +4,7 @@ import { useProcessing } from '../hooks/useProcessing';
 import { useProject } from '../hooks/useProject';
 import ProjectSelector from '../components/ProjectSelector';
 import { PROCESSING_STATUS } from '../utils/constants';
-import { formatDate, formatFileSize, getStatusIcon, getStatusColor, truncateFileName } from '../utils/helpers';
+import { formatDate, formatFileSize, getStatusIcon, getStatusColor, getStatusLabel, truncateFileName } from '../utils/helpers';
 
 const ProcessingListPage = () => {
   const { uploads } = useProcessing();
@@ -118,7 +118,7 @@ const ProcessingListPage = () => {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                {getStatusIcon(status)} {status} ({statusCounts[status]})
+                {getStatusIcon(status)} {getStatusLabel(status)} ({statusCounts[status]})
               </button>
             ))}
           </div>
@@ -190,7 +190,7 @@ const ProcessingListPage = () => {
                   {/* Status */}
                   <div className="flex items-center gap-4">
                     <span className={`status-badge ${getStatusColor(upload.status)}`}>
-                      {getStatusIcon(upload.status)} {upload.status}
+                      {getStatusIcon(upload.status)} {getStatusLabel(upload.status)}
                     </span>
                   </div>
 

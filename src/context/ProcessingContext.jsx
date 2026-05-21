@@ -1,30 +1,14 @@
 import { useReducer } from 'react';
 import { ProcessingContext } from './ProcessingContext';
 import { PROCESSING_STATUS, PROCESSING_ACTIONS } from '../utils/constants';
+import { normalizeUploadStatus } from '../utils/helpers';
 import { MockApiService } from '../services/mockApiService';
 import { ApiService } from '../services/apiService';
 
-function mapBackendStatusToFrontendStatus(status) {
-  const normalized = status?.toLowerCase();
-
-  switch (normalized) {
-    case 'pending':
-      return PROCESSING_STATUS.RECEBIDO;
-    case 'completed':
-      return PROCESSING_STATUS.EM_PROCESSAMENTO;
-    case 'scanned_ok':
-      return PROCESSING_STATUS.ANALISADO;
-    case 'quarantined':
-    case 'analysis_invalid':
-    case 'analysis_review_required':
-    case 'failed':
-      return PROCESSING_STATUS.ERRO;
-    default:
-      return PROCESSING_STATUS.RECEBIDO;
-  }
-}
-
-const persistedUploads = JSON.parse(localStorage.getItem('fiap-uploads') || '[]');
+const persistedUploads = JSON.parse(localStorage.getItem('fiap-uploads') || '[]').map((upload) => ({
+  ...upload,
+  status: normalizeUploadStatus(upload.status) || upload.status
+}));
 const initialUploads = persistedUploads.length > 0
   ? persistedUploads
   : MockApiService.getCompletedUploadsMock();
@@ -94,7 +78,7 @@ export function ProcessingProvider({ children }) {
       projectId: uploadPayload.projectId || null,
       projectName: uploadPayload.projectName || null,
       uploaderId: uploadPayload.uploaderId || null,
-      status: uploadPayload.status || PROCESSING_STATUS.RECEBIDO,
+      status: normalizeUploadStatus(uploadPayload.status) || PROCESSING_STATUS.RECEBIDO,
       createdAt: uploadPayload.createdAt || now,
       updatedAt: uploadPayload.updatedAt || now
     };
@@ -123,10 +107,14 @@ export function ProcessingProvider({ children }) {
   const getRealStatus = async (uploadId) => {
     try {
       const uploadData = await ApiService.getUpload(uploadId);
-      const frontendStatus = mapBackendStatusToFrontendStatus(uploadData.status);
+      const frontendStatus = normalizeUploadStatus(uploadData.status) || PROCESSING_STATUS.RECEBIDO;
+
+      const resolvedId = uploadData.id ?? uploadData.uploadId ?? uploadId;
 
       return {
         ...uploadData,
+        id: String(resolvedId),
+        uploadId: String(resolvedId),
         status: frontendStatus,
         fileName: uploadData.filename,
         fileSize: uploadData.sizeBytes,

@@ -1,15 +1,15 @@
-import { useReducer } from 'react';
+import { useCallback, useEffect, useReducer, useState } from 'react';
 import { ProjectContext } from './ProjectContext';
 import { PROJECT_ACTIONS } from '../utils/constants';
+import { ApiService } from '../services/apiService';
 
 const PROJECTS_STORAGE_KEY = 'fiap-projects';
 const SELECTED_PROJECT_KEY = 'fiap-selected-project';
 
-const persistedProjects = JSON.parse(localStorage.getItem(PROJECTS_STORAGE_KEY) || '[]');
 const persistedSelectedId = localStorage.getItem(SELECTED_PROJECT_KEY) || null;
 
 const initialState = {
-  projects: persistedProjects,
+  projects: [],
   currentProjectId: persistedSelectedId
 };
 
@@ -17,8 +17,24 @@ function projectReducer(state, action) {
   let newState;
 
   switch (action.type) {
+    case PROJECT_ACTIONS.SET_PROJECTS: {
+      const projects = Array.isArray(action.payload) ? action.payload : [];
+      const hasSelectedProject = projects.some((project) => project.id === state.currentProjectId);
+      newState = {
+        ...state,
+        projects,
+        currentProjectId: hasSelectedProject ? state.currentProjectId : null
+      };
+      break;
+    }
+
     case PROJECT_ACTIONS.ADD_PROJECT:
-      newState = { ...state, projects: [...state.projects, action.payload] };
+      newState = {
+        ...state,
+        projects: state.projects.some((project) => project.id === action.payload.id)
+          ? state.projects.map((project) => (project.id === action.payload.id ? action.payload : project))
+          : [...state.projects, action.payload]
+      };
       break;
 
     case PROJECT_ACTIONS.SELECT_PROJECT:
@@ -36,6 +52,27 @@ function projectReducer(state, action) {
 
 export function ProjectProvider({ children }) {
   const [state, dispatch] = useReducer(projectReducer, initialState);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+  const [projectsError, setProjectsError] = useState('');
+
+  const refreshProjects = useCallback(async () => {
+    setIsLoadingProjects(true);
+    setProjectsError('');
+
+    try {
+      const projects = await ApiService.getProjects();
+      dispatch({ type: PROJECT_ACTIONS.SET_PROJECTS, payload: projects });
+    } catch (error) {
+      dispatch({ type: PROJECT_ACTIONS.SET_PROJECTS, payload: [] });
+      setProjectsError(error.message || 'Erro ao carregar projetos do backend.');
+    } finally {
+      setIsLoadingProjects(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshProjects();
+  }, [refreshProjects]);
 
   const addProject = (project) => {
     dispatch({ type: PROJECT_ACTIONS.ADD_PROJECT, payload: project });
@@ -55,7 +92,10 @@ export function ProjectProvider({ children }) {
     currentProject,
     addProject,
     selectProject,
-    getProjectById
+    getProjectById,
+    isLoadingProjects,
+    projectsError,
+    refreshProjects
   };
 
   return (
