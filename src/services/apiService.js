@@ -71,4 +71,15 @@ export class ApiService {
       method: 'GET'
     });
   }
+
+  /**
+   * Lista uploads de um projeto (upload-service).
+   * @param {string} projectId UUID do projeto
+   */
+  static async listUploadsByProject(projectId) {
+    const q = encodeURIComponent(projectId);
+    return request(`/v1/uploads?projectId=${q}`, {
+      method: 'GET'
+    });
+  }
 }

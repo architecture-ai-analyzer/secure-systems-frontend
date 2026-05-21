@@ -82,7 +82,10 @@ export function ProjectProvider({ children }) {
     dispatch({ type: PROJECT_ACTIONS.SELECT_PROJECT, payload: projectId });
   };
 
-  const getProjectById = (id) => state.projects.find((p) => p.id === id) || null;
+  const getProjectById = useCallback(
+    (id) => state.projects.find((p) => p.id === id) || null,
+    [state.projects]
+  );
 
   const currentProject = getProjectById(state.currentProjectId);
 
