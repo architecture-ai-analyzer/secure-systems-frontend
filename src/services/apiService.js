@@ -31,6 +31,12 @@ async function request(path, options = {}) {
 }
 
 export class ApiService {
+  static async getProjects() {
+    return request('/v1/projects', {
+      method: 'GET'
+    });
+  }
+
   static async createProject(name, description, ownerId) {
     return request('/v1/projects', {
       method: 'POST',
@@ -75,6 +81,17 @@ export class ApiService {
 
   static async getUpload(uploadId) {
     return request(`/v1/uploads/${uploadId}`, {
+      method: 'GET'
+    });
+  }
+
+  /**
+   * Lista uploads de um projeto (upload-service).
+   * @param {string} projectId UUID do projeto
+   */
+  static async listUploadsByProject(projectId) {
+    const q = encodeURIComponent(projectId);
+    return request(`/v1/uploads?projectId=${q}`, {
       method: 'GET'
     });
   }

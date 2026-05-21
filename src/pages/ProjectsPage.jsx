@@ -6,7 +6,15 @@ import { formatDate } from '../utils/helpers';
 const OWNER_ID_DEFAULT = 'frontend-dev';
 
 const ProjectsPage = () => {
-  const { projects, currentProjectId, addProject, selectProject } = useProject();
+  const {
+    projects,
+    currentProjectId,
+    addProject,
+    selectProject,
+    isLoadingProjects,
+    projectsError,
+    refreshProjects
+  } = useProject();
   const [form, setForm] = useState({ name: '', description: '', ownerId: OWNER_ID_DEFAULT });
   const [fieldErrors, setFieldErrors] = useState({});
   const [apiError, setApiError] = useState('');
@@ -15,9 +23,9 @@ const ProjectsPage = () => {
 
   const validate = () => {
     const errors = {};
-    if (!form.name.trim()) errors.name = 'Nome é obrigatório';
-    if (!form.description.trim()) errors.description = 'Descrição é obrigatória';
-    if (!form.ownerId.trim()) errors.ownerId = 'Owner ID é obrigatório';
+    if (!form.name.trim()) errors.name = 'Nome e obrigatorio';
+    if (!form.description.trim()) errors.description = 'Descricao e obrigatoria';
+    if (!form.ownerId.trim()) errors.ownerId = 'Owner ID e obrigatorio';
     return errors;
   };
 
@@ -49,17 +57,18 @@ const ProjectsPage = () => {
 
       const project = {
         ...created,
-        ownerId: form.ownerId.trim(),
-        createdAt: new Date().toISOString()
+        ownerId: created.ownerId || form.ownerId.trim(),
+        createdAt: created.createdAt || new Date().toISOString()
       };
 
       addProject(project);
       selectProject(project.id);
+      await refreshProjects();
       setForm({ name: '', description: '', ownerId: OWNER_ID_DEFAULT });
       setFieldErrors({});
       setSuccessMessage(`Projeto "${project.name}" criado e selecionado com sucesso.`);
     } catch (err) {
-      setApiError(err.message || 'Erro ao criar projeto. Verifique a conexão com o serviço.');
+      setApiError(err.message || 'Erro ao criar projeto. Verifique a conexao com o servico.');
     } finally {
       setIsCreating(false);
     }
@@ -67,7 +76,6 @@ const ProjectsPage = () => {
 
   return (
     <div className="p-6 lg:p-8">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Projetos</h1>
         <p className="text-gray-600">
@@ -76,12 +84,10 @@ const ProjectsPage = () => {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
-        {/* Formulário de criação */}
         <div className="card p-8">
           <h2 className="text-xl font-semibold text-gray-800 mb-6">Novo Projeto</h2>
 
           <form onSubmit={handleCreate} noValidate className="space-y-5">
-            {/* Nome */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Nome <span className="text-red-500">*</span>
@@ -101,10 +107,9 @@ const ProjectsPage = () => {
               )}
             </div>
 
-            {/* Descrição */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Descrição <span className="text-red-500">*</span>
+                Descricao <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={form.description}
@@ -121,7 +126,6 @@ const ProjectsPage = () => {
               )}
             </div>
 
-            {/* Owner ID */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Owner ID <span className="text-red-500">*</span>
@@ -141,7 +145,6 @@ const ProjectsPage = () => {
               )}
             </div>
 
-            {/* Feedback de API */}
             {apiError && (
               <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                 {apiError}
@@ -150,7 +153,7 @@ const ProjectsPage = () => {
 
             {successMessage && (
               <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
-                ✅ {successMessage}
+                {successMessage}
               </div>
             )}
 
@@ -175,18 +178,37 @@ const ProjectsPage = () => {
           </form>
         </div>
 
-        {/* Lista de projetos */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-6">
-            Seus Projetos
-            {projects.length > 0 && (
-              <span className="ml-2 text-sm font-normal text-gray-500">
-                ({projects.length})
-              </span>
-            )}
-          </h2>
+          <div className="flex items-center justify-between gap-3 mb-6">
+            <h2 className="text-xl font-semibold text-gray-800">
+              Seus Projetos
+              {projects.length > 0 && (
+                <span className="ml-2 text-sm font-normal text-gray-500">
+                  ({projects.length})
+                </span>
+              )}
+            </h2>
+            <button
+              type="button"
+              onClick={refreshProjects}
+              disabled={isLoadingProjects}
+              className="shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoadingProjects ? 'Atualizando...' : 'Atualizar'}
+            </button>
+          </div>
 
-          {projects.length === 0 ? (
+          {projectsError && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {projectsError}
+            </div>
+          )}
+
+          {isLoadingProjects ? (
+            <div className="card p-8 text-center text-gray-500">
+              Carregando projetos do backend...
+            </div>
+          ) : projects.length === 0 ? (
             <div className="card p-8 text-center text-gray-500">
               <p className="text-4xl mb-3">📁</p>
               <p className="font-medium">Nenhum projeto criado ainda.</p>
@@ -213,13 +235,13 @@ const ProjectsPage = () => {
                           </h3>
                           {isSelected && (
                             <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-fiap-blue text-white">
-                              ✓ Selecionado
+                              Selecionado
                             </span>
                           )}
                         </div>
                         <p className="text-sm text-gray-600 break-words">{project.description}</p>
                         <div className="mt-2 text-xs text-gray-400 space-y-0.5">
-                          <p>Owner: {project.ownerId}</p>
+                          {project.ownerId && <p>Owner: {project.ownerId}</p>}
                           {project.createdAt && (
                             <p>Criado em: {formatDate(project.createdAt)}</p>
                           )}

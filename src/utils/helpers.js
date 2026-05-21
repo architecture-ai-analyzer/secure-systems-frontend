@@ -1,5 +1,61 @@
 // Utility functions for the FIAP Secure Systems application
 
+import {
+  PROCESSING_STATUS,
+  PROCESSING_STATUS_LABELS,
+  PROCESSING_STATUS_PROGRESS
+} from './constants';
+
+const LEGACY_STATUS_MAP = {
+  // Inglês / wire legado
+  RECEIVED: PROCESSING_STATUS.RECEBIDO,
+  PROCESSING: PROCESSING_STATUS.EM_PROCESSAMENTO,
+  ANALYZED: PROCESSING_STATUS.ANALISADO,
+  ERROR: PROCESSING_STATUS.ERRO,
+  PENDING: PROCESSING_STATUS.RECEBIDO,
+  COMPLETED: PROCESSING_STATUS.ANALISADO,
+  FAILED: PROCESSING_STATUS.ERRO,
+  SCANNED_OK: PROCESSING_STATUS.ANALISADO,
+  QUARANTINED: PROCESSING_STATUS.ANALISADO,
+  INCONCLUSIVE: PROCESSING_STATUS.ERRO
+};
+
+const normalizeKey = (value) =>
+  String(value)
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '_');
+
+/** Maps backend or legacy status strings to PROCESSING_STATUS values */
+export const normalizeUploadStatus = (status) => {
+  if (!status) return null;
+
+  const key = normalizeKey(status);
+  if (Object.values(PROCESSING_STATUS).includes(key)) {
+    return key;
+  }
+  return LEGACY_STATUS_MAP[key] || null;
+};
+
+export const getStatusLabel = (status) => {
+  const normalized = normalizeUploadStatus(status);
+  return (normalized && PROCESSING_STATUS_LABELS[normalized]) || status;
+};
+
+export const getUploadProgressPercentage = (status) => {
+  const normalized = normalizeUploadStatus(status);
+  if (!normalized) return 0;
+  return PROCESSING_STATUS_PROGRESS[normalized] ?? 0;
+};
+
+export const isRealStatusForUpload = (realStatus, uploadId) => {
+  if (!realStatus || !uploadId) return false;
+  const realId = realStatus.id ?? realStatus.uploadId;
+  return realId != null && String(realId) === String(uploadId);
+};
+
 export const formatFileSize = (bytes) => {
   if (bytes === 0) return '0 Bytes';
   
@@ -64,25 +120,27 @@ export const validateUploadFile = (file) => {
 export const validatePdfFile = validateUploadFile;
 
 export const getStatusIcon = (status) => {
+  const normalized = normalizeUploadStatus(status);
   const icons = {
-    'Recebido': '🕐',
-    'Em processamento': '⚙️',
-    'Analisado': '✅',
-    'Erro': '❌'
+    [PROCESSING_STATUS.RECEBIDO]: '🕐',
+    [PROCESSING_STATUS.EM_PROCESSAMENTO]: '⚙️',
+    [PROCESSING_STATUS.ANALISADO]: '✅',
+    [PROCESSING_STATUS.ERRO]: '❌'
   };
-  
-  return icons[status] || '❓';
+
+  return icons[normalized] || '❓';
 };
 
 export const getStatusColor = (status) => {
+  const normalized = normalizeUploadStatus(status);
   const colors = {
-    'Recebido': 'status-recebido',
-    'Em processamento': 'status-processando',
-    'Analisado': 'status-analisado',
-    'Erro': 'status-erro'
+    [PROCESSING_STATUS.RECEBIDO]: 'status-recebido',
+    [PROCESSING_STATUS.EM_PROCESSAMENTO]: 'status-processando',
+    [PROCESSING_STATUS.ANALISADO]: 'status-analisado',
+    [PROCESSING_STATUS.ERRO]: 'status-erro'
   };
-  
-  return colors[status] || 'bg-gray-100 text-gray-800';
+
+  return colors[normalized] || 'bg-gray-100 text-gray-800';
 };
 
 export const getRiskLevelColor = (level) => {
