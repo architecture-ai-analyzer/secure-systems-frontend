@@ -94,7 +94,7 @@ jobs:
 
           S3_BUCKET=$(terraform output -raw s3_bucket_name)
           DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id)
-          GATEWAY_API_BASE_URL=$(terraform output -var="environment=${{ steps.env.outputs.environment }}" -raw gateway_api_base_url)
+          GATEWAY_API_BASE_URL=$(terraform output -raw gateway_api_base_url)
 
           echo "s3_bucket=${S3_BUCKET}" >> $GITHUB_OUTPUT
           echo "distribution_id=${DISTRIBUTION_ID}" >> $GITHUB_OUTPUT
