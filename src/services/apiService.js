@@ -1,4 +1,3 @@
-// Use gateway API URL from environment variable
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '');
 
 function mapErrorMessage(status, body) {
@@ -66,8 +65,7 @@ export class ApiService {
           JSON.stringify({
             filename: file.name,
             projectId,
-            uploaderId,
-            templateId
+            uploaderId
           })
         ],
         { type: 'application/json' }

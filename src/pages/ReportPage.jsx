@@ -15,6 +15,7 @@ const ReportPage = () => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedTemplate, setSelectedTemplate] = useState('template-tecnico');
 
   const upload = uploadId ? getUploadById(uploadId) : null;
   const isUploadInSelectedProject = !currentProjectId || upload?.projectId === currentProjectId;
@@ -63,7 +64,7 @@ const ReportPage = () => {
 
   const handleDownloadReport = () => {
     if (upload?.id) {
-      reportApiService.downloadReport(upload.id);
+      reportApiService.downloadReport(upload.id, selectedTemplate);
     }
   };
 
@@ -125,7 +126,6 @@ const ReportPage = () => {
         />
       </div>
 
-      {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
@@ -135,7 +135,6 @@ const ReportPage = () => {
             <p className="text-sm text-gray-500">
               Gerado em: {formatDate(report.generatedAt)}
             </p>
-            {/* NOVA LINHA */}
             <p className="text-sm text-gray-500 mt-1">
               Template Aplicado: <span className="font-semibold text-fiap-blue uppercase">{report.templateId || 'PADRÃO'}</span>
             </p>
@@ -152,18 +151,26 @@ const ReportPage = () => {
             </p>
           </div>
           
-          <div className="flex gap-3">
-            <Link to="/processing" className="btn-secondary">
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <select 
+              value={selectedTemplate} 
+              onChange={(e) => setSelectedTemplate(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-fiap-blue focus:border-transparent outline-none"
+            >
+              <option value="template-tecnico">Template Técnico</option>
+              <option value="template-executivo">Template Executivo</option>
+              <option value="template-seguranca">Template de Segurança</option>
+            </select>
+            <Link to="/processing" className="btn-secondary whitespace-nowrap">
               ← Voltar à Lista
             </Link>
-            <button onClick={handleDownloadReport} className="btn-primary">
+            <button onClick={handleDownloadReport} className="btn-primary whitespace-nowrap">
               📥 Download do Relatório
             </button>
           </div>
         </div>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="card p-6 text-center">
           <div className="text-3xl font-bold text-fiap-blue mb-2">{report.summary.totalComponents}</div>
@@ -184,7 +191,6 @@ const ReportPage = () => {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
-        {/* Detected Components */}
         <div className="card">
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-800">🏗️ Componentes Detectados</h2>
@@ -209,7 +215,6 @@ const ReportPage = () => {
           </div>
         </div>
 
-        {/* Security Analysis */}
         <div className="card">
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-800">🔒 Análise de Segurança</h2>
@@ -242,7 +247,6 @@ const ReportPage = () => {
               ))}
             </div>
 
-            {/* Compliance */}
             <div className="mt-6 pt-6 border-t border-gray-200">
               <h4 className="font-medium text-gray-800 mb-3">Conformidade</h4>
               <div className="space-y-2">
@@ -269,14 +273,12 @@ const ReportPage = () => {
           </div>
         </div>
 
-        {/* Architecture Analysis */}
         <div className="card">
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-800">📐 Análise Arquitetural</h2>
           </div>
           <div className="p-6">
             <div className="space-y-6">
-              {/* Patterns */}
               <div>
                 <h4 className="font-medium text-gray-800 mb-3">Padrões Detectados</h4>
                 <div className="space-y-3">
@@ -304,7 +306,6 @@ const ReportPage = () => {
                 </div>
               </div>
 
-              {/* Metrics */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <h4 className="font-medium text-gray-800 mb-2">Complexidade</h4>
@@ -325,14 +326,12 @@ const ReportPage = () => {
           </div>
         </div>
 
-        {/* Performance Analysis */}
         <div className="card">
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-800">⚡ Análise de Performance</h2>
           </div>
           <div className="p-6">
             <div className="space-y-6">
-              {/* Metrics */}
               <div>
                 <h4 className="font-medium text-gray-800 mb-3">Métricas</h4>
                 <div className="space-y-3">
@@ -356,7 +355,6 @@ const ReportPage = () => {
                 </div>
               </div>
 
-              {/* Bottlenecks */}
               <div>
                 <h4 className="font-medium text-gray-800 mb-3">Gargalos Identificados</h4>
                 <div className="space-y-2">
@@ -369,7 +367,6 @@ const ReportPage = () => {
                 </div>
               </div>
 
-              {/* Capacity */}
               <div>
                 <h4 className="font-medium text-gray-800 mb-3">Capacidade</h4>
                 <div className="bg-gray-50 p-4 rounded-lg space-y-2">
@@ -392,7 +389,6 @@ const ReportPage = () => {
         </div>
       </div>
 
-      {/* Recommendations */}
       <div className="mt-8 card">
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-800">💡 Recomendações</h2>

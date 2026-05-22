@@ -11,7 +11,6 @@ const UploadPage = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
-  const [templateId, setTemplateId] = useState('template-tecnico');
   const { addUpload } = useProcessing();
   const { currentProject, currentProjectId } = useProject();
   const navigate = useNavigate();
@@ -30,8 +29,7 @@ const UploadPage = () => {
       const uploadResponse = await ApiService.createUpload(
         selectedFile,
         currentProject.id,
-        currentProject.ownerId || 'frontend-dev',
-        templateId
+        currentProject.ownerId || 'frontend-dev'
       );
 
       const uploadId = uploadResponse.uploadId;
@@ -46,7 +44,7 @@ const UploadPage = () => {
         createdAt = backendUpload.createdAt || createdAt;
         updatedAt = backendUpload.completedAt || backendUpload.createdAt || updatedAt;
       } catch (statusError) {
-        console.warn('Could not fetch upload status after creation:', statusError);
+        console.warn(statusError);
       }
 
       addUpload({
@@ -61,14 +59,12 @@ const UploadPage = () => {
         updatedAt
       });
       
-      // Show success message and redirect
       setTimeout(() => {
         setIsUploading(false);
         navigate(`/status/${uploadId}`);
       }, 1000);
       
     } catch (error) {
-      console.error('Upload failed:', error);
       setUploadError(error.message || 'Falha ao enviar arquivo para o servico de upload.');
       setIsUploading(false);
     }
@@ -76,7 +72,6 @@ const UploadPage = () => {
 
   return (
     <div className="p-6 lg:p-8">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Upload de Diagrama de Arquitetura
@@ -87,7 +82,6 @@ const UploadPage = () => {
         </p>
       </div>
 
-      {/* Aviso de projeto não selecionado */}
       {!currentProjectId && (
         <div className="max-w-2xl mx-auto mb-6 rounded-lg border border-yellow-300 bg-yellow-50 p-4 flex items-start gap-3">
           <span className="text-yellow-500 text-xl">⚠️</span>
@@ -105,7 +99,6 @@ const UploadPage = () => {
         </div>
       )}
 
-      {/* Projeto selecionado */}
       {currentProject && (
         <div className="max-w-2xl mx-auto mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4 flex items-center gap-3">
           <span className="text-blue-500 text-xl">📁</span>
@@ -122,28 +115,11 @@ const UploadPage = () => {
         </div>
       )}
 
-      {/* Upload Section */}
       <div className="max-w-2xl mx-auto">
         <div className="card p-8">
           <h2 className="text-xl font-semibold text-gray-800 mb-6">
             Selecionar Diagrama
           </h2>
-
-          <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-800 mb-2">
-              Tipo de Relatório (Template)
-            </label>
-            <select
-              value={templateId}
-              onChange={(e) => setTemplateId(e.target.value)}
-              disabled={isUploading}
-              className="w-full border border-gray-300 rounded-lg p-3 text-gray-700 bg-white focus:outline-none focus:border-fiap-blue focus:ring-1 focus:ring-fiap-blue transition-colors cursor-pointer"
-            >
-              <option value="template-tecnico">🛠️ Relatório Técnico (Deep Dive Arquitetural)</option>
-              <option value="template-executivo">💼 Relatório Executivo (Visão de Negócios/Custos)</option>
-              <option value="template-seguranca">🔒 Relatório de Segurança (SecOps & Compliance)</option>
-            </select>
-          </div>
 
           <FileUploader 
             onFileSelect={handleFileSelect}
@@ -156,7 +132,6 @@ const UploadPage = () => {
             </div>
           )}
 
-          {/* Upload Button */}
           <div className="mt-8 flex justify-center">
             <button
               onClick={handleUpload}
@@ -181,7 +156,6 @@ const UploadPage = () => {
           </div>
         </div>
 
-        {/* Information Cards */}
         <div className="mt-8 grid md:grid-cols-2 gap-6">
           <div className="card p-6">
             <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
@@ -209,7 +183,6 @@ const UploadPage = () => {
           </div>
         </div>
 
-        {/* Recent Uploads Info */}
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-500 mb-4">
             Após o upload, você pode acompanhar o progresso na seção "Lista de Processamento"
