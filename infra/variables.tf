@@ -50,8 +50,8 @@ variable "cache_max_ttl" {
   default     = 31536000
 
   validation {
-    condition     = var.cache_max_ttl >= var.cloudfront_ttl
-    error_message = "Cache max TTL must be greater than or equal to default TTL."
+    condition     = var.cache_max_ttl >= 0 && var.cache_max_ttl <= 31536000
+    error_message = "Cache max TTL must be between 0 and 31536000 seconds."
   }
 }
 
