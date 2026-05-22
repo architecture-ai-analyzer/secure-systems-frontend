@@ -6,6 +6,7 @@ on:
       - main
       - homologation
       - develop
+      - feature/frontGateway
   pull_request:
     branches:
       - main
@@ -51,6 +52,11 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-role
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
 
       - name: Determine environment
         id: env
