@@ -4,8 +4,6 @@ import { useProcessing } from '../hooks/useProcessing';
 import { useProject } from '../hooks/useProject';
 import ProjectSelector from '../components/ProjectSelector';
 import { PROCESSING_STATUS } from '../utils/constants';
-// TODO: BACKEND_INTEGRATION - Substituído MockApiService por reportApiService para integração com backend
-// import { MockApiService } from '../services/mockApiService';
 import reportApiService from '../services/reportApiService.js';
 import { formatDate, getRiskLevelColor, getPriorityColor } from '../utils/helpers';
 
@@ -50,9 +48,7 @@ const ReportPage = () => {
       }
 
       try {
-        // TODO: BACKEND_INTEGRATION - Substituído MockApiService por reportApiService
-        // const reportData = await MockApiService.generateReport(upload.id, upload.fileName);
-        const reportData = await reportApiService.getReport(upload.id);
+        const reportData = await reportApiService.getReport(upload.id, upload.fileName);
         setReport(reportData);
       } catch (err) {
         setError('Erro ao gerar relatório');
@@ -319,7 +315,9 @@ const ReportPage = () => {
                 <div>
                   <h4 className="font-medium text-gray-800 mb-2">Manutenibilidade</h4>
                   <div className="px-3 py-2 rounded text-center font-medium bg-blue-100 text-blue-800">
-                    {report.architectureAnalysis.maintainability}%
+                    {typeof report.architectureAnalysis.maintainability === 'number'
+                      ? `${report.architectureAnalysis.maintainability}%`
+                      : report.architectureAnalysis.maintainability}
                   </div>
                 </div>
               </div>

@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+// Use gateway API URL from environment variable
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '');
 
 function mapErrorMessage(status, body) {
   if (status === 404) return 'Recurso nao encontrado.';
@@ -30,6 +31,12 @@ async function request(path, options = {}) {
 }
 
 export class ApiService {
+  static async getProjects() {
+    return request('/v1/projects', {
+      method: 'GET'
+    });
+  }
+
   static async createProject(name, description, ownerId) {
     return request('/v1/projects', {
       method: 'POST',
@@ -37,7 +44,19 @@ export class ApiService {
     });
   }
 
-  static async createUpload(file, projectId, uploaderId = 'frontend-dev', templateId = null) {
+  static async listProjects() {
+    return request('/v1/projects', {
+      method: 'GET'
+    });
+  }
+
+  static async getProject(projectId) {
+    return request(`/v1/projects/${projectId}`, {
+      method: 'GET'
+    });
+  }
+
+  static async createUpload(file, projectId, uploaderId = 'frontend-dev') {
     const formData = new FormData();
     formData.append('file', file);
     formData.append(
@@ -63,6 +82,17 @@ export class ApiService {
 
   static async getUpload(uploadId) {
     return request(`/v1/uploads/${uploadId}`, {
+      method: 'GET'
+    });
+  }
+
+  /**
+   * Lista uploads de um projeto (upload-service).
+   * @param {string} projectId UUID do projeto
+   */
+  static async listUploadsByProject(projectId) {
+    const q = encodeURIComponent(projectId);
+    return request(`/v1/uploads?projectId=${q}`, {
       method: 'GET'
     });
   }

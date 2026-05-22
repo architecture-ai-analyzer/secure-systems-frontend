@@ -10,7 +10,6 @@ locals {
       Environment = var.environment
       Application = var.app_name
       Project     = var.project_name
-      CreatedAt   = timestamp()
     }
   )
 }

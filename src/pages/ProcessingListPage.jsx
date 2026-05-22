@@ -4,14 +4,21 @@ import { useProcessing } from '../hooks/useProcessing';
 import { useProject } from '../hooks/useProject';
 import ProjectSelector from '../components/ProjectSelector';
 import { PROCESSING_STATUS } from '../utils/constants';
-import { formatDate, formatFileSize, getStatusIcon, getStatusColor, truncateFileName } from '../utils/helpers';
+import {
+  formatDate,
+  formatFileSize,
+  getStatusIcon,
+  getStatusColor,
+  getStatusLabel,
+  getUploadProgressPercentage,
+  truncateFileName
+} from '../utils/helpers';
 
 const ProcessingListPage = () => {
-  const { uploads } = useProcessing();
-  const { currentProjectId, currentProject, projects, getProjectById } = useProject();
+  const { uploads, refreshUploadsForProject } = useProcessing();
+  const { currentProjectId, currentProject, getProjectById } = useProject();
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
-  const [processingProgress] = useState(() => Math.random() * 40 + 30);
 
   const projectScopedUploads = currentProjectId
     ? uploads.filter((upload) => upload.projectId === currentProjectId)
@@ -118,7 +125,7 @@ const ProcessingListPage = () => {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                {getStatusIcon(status)} {status} ({statusCounts[status]})
+                {getStatusIcon(status)} {getStatusLabel(status)} ({statusCounts[status]})
               </button>
             ))}
           </div>
@@ -190,7 +197,7 @@ const ProcessingListPage = () => {
                   {/* Status */}
                   <div className="flex items-center gap-4">
                     <span className={`status-badge ${getStatusColor(upload.status)}`}>
-                      {getStatusIcon(upload.status)} {upload.status}
+                      {getStatusIcon(upload.status)} {getStatusLabel(upload.status)}
                     </span>
                   </div>
 
@@ -226,7 +233,7 @@ const ProcessingListPage = () => {
                     <div className="bg-gray-200 rounded-full h-2">
                       <div 
                         className="bg-fiap-blue rounded-full h-2 transition-all duration-300"
-                        style={{ width: `${processingProgress}%` }}
+                        style={{ width: `${getUploadProgressPercentage(upload.status)}%` }}
                       ></div>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
@@ -242,8 +249,9 @@ const ProcessingListPage = () => {
 
       {/* Refresh Button */}
       <div className="mt-8 text-center">
-        <button 
-          onClick={() => window.location.reload()}
+        <button
+          type="button"
+          onClick={() => refreshUploadsForProject()}
           className="btn-secondary"
         >
           🔄 Atualizar Status

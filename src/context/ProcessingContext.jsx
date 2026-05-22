@@ -1,33 +1,15 @@
-import { useReducer } from 'react';
+import { useReducer, useContext, useEffect, useCallback, useRef } from 'react';
 import { ProcessingContext } from './ProcessingContext';
+import { ProjectContext } from './ProjectContext';
 import { PROCESSING_STATUS, PROCESSING_ACTIONS } from '../utils/constants';
-import { MockApiService } from '../services/mockApiService';
+import { normalizeUploadStatus } from '../utils/helpers';
 import { ApiService } from '../services/apiService';
 
-function mapBackendStatusToFrontendStatus(status) {
-  const normalized = status?.toLowerCase();
-
-  switch (normalized) {
-    case 'pending':
-      return PROCESSING_STATUS.RECEBIDO;
-    case 'completed':
-      return PROCESSING_STATUS.EM_PROCESSAMENTO;
-    case 'scanned_ok':
-      return PROCESSING_STATUS.ANALISADO;
-    case 'quarantined':
-    case 'analysis_invalid':
-    case 'analysis_review_required':
-    case 'failed':
-      return PROCESSING_STATUS.ERRO;
-    default:
-      return PROCESSING_STATUS.RECEBIDO;
-  }
-}
-
-const persistedUploads = JSON.parse(localStorage.getItem('fiap-uploads') || '[]');
-const initialUploads = persistedUploads.length > 0
-  ? persistedUploads
-  : MockApiService.getCompletedUploadsMock();
+const persistedUploads = JSON.parse(localStorage.getItem('fiap-uploads') || '[]').map((upload) => ({
+  ...upload,
+  status: normalizeUploadStatus(upload.status) || upload.status
+}));
+const initialUploads = persistedUploads;
 
 // Initial state
 const initialState = {
@@ -71,7 +53,18 @@ function processingReducer(state, action) {
         currentUpload: null
       };
       break;
-      
+
+    case PROCESSING_ACTIONS.REPLACE_PROJECT_UPLOADS: {
+      const { projectId, uploads: incoming } = action.payload;
+      const pid = String(projectId);
+      const others = state.uploads.filter((u) => String(u.projectId) !== pid);
+      newState = {
+        ...state,
+        uploads: [...others, ...incoming]
+      };
+      break;
+    }
+
     default:
       return state;
   }
@@ -84,6 +77,50 @@ function processingReducer(state, action) {
 // Provider component
 export function ProcessingProvider({ children }) {
   const [state, dispatch] = useReducer(processingReducer, initialState);
+  const project = useContext(ProjectContext);
+  const projectRef = useRef(project);
+  projectRef.current = project;
+
+  const refreshUploadsForProject = useCallback(async () => {
+    const p = projectRef.current;
+    const pid = p?.currentProjectId;
+    if (!pid || p.isLoadingProjects) return;
+    try {
+      const rows = await ApiService.listUploadsByProject(pid);
+      const list = Array.isArray(rows) ? rows : [];
+      const incoming = list.map((row) => {
+        const id = String(row.id ?? '');
+        const projectId = row.projectId != null ? String(row.projectId) : null;
+        const proj = projectId && p.getProjectById ? p.getProjectById(projectId) : null;
+        return {
+          id,
+          fileName: row.filename,
+          fileSize: row.sizeBytes ?? 0,
+          projectId,
+          projectName: proj?.name ?? null,
+          uploaderId: row.uploaderId ?? null,
+          status: normalizeUploadStatus(row.status) || PROCESSING_STATUS.RECEBIDO,
+          createdAt: row.createdAt || new Date().toISOString(),
+          updatedAt: row.completedAt || row.createdAt || new Date().toISOString()
+        };
+      });
+      dispatch({
+        type: PROCESSING_ACTIONS.REPLACE_PROJECT_UPLOADS,
+        payload: { projectId: pid, uploads: incoming }
+      });
+    } catch (e) {
+      console.error('refreshUploadsForProject:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshUploadsForProject();
+  }, [
+    refreshUploadsForProject,
+    project?.currentProjectId,
+    project?.isLoadingProjects,
+    project?.projects?.length
+  ]);
 
   const addUpload = (uploadPayload) => {
     const now = new Date().toISOString();
@@ -94,7 +131,7 @@ export function ProcessingProvider({ children }) {
       projectId: uploadPayload.projectId || null,
       projectName: uploadPayload.projectName || null,
       uploaderId: uploadPayload.uploaderId || null,
-      status: uploadPayload.status || PROCESSING_STATUS.RECEBIDO,
+      status: normalizeUploadStatus(uploadPayload.status) || PROCESSING_STATUS.RECEBIDO,
       createdAt: uploadPayload.createdAt || now,
       updatedAt: uploadPayload.updatedAt || now
     };
@@ -123,10 +160,14 @@ export function ProcessingProvider({ children }) {
   const getRealStatus = async (uploadId) => {
     try {
       const uploadData = await ApiService.getUpload(uploadId);
-      const frontendStatus = mapBackendStatusToFrontendStatus(uploadData.status);
+      const frontendStatus = normalizeUploadStatus(uploadData.status) || PROCESSING_STATUS.RECEBIDO;
+
+      const resolvedId = uploadData.id ?? uploadData.uploadId ?? uploadId;
 
       return {
         ...uploadData,
+        id: String(resolvedId),
+        uploadId: String(resolvedId),
         status: frontendStatus,
         fileName: uploadData.filename,
         fileSize: uploadData.sizeBytes,
@@ -135,8 +176,7 @@ export function ProcessingProvider({ children }) {
       };
     } catch (error) {
       console.error('Error fetching real status:', error);
-      // Fallback to mock if real API fails
-      return MockApiService.getProcessingStatus(uploadId);
+      throw error;
     }
   };
 
@@ -148,7 +188,8 @@ export function ProcessingProvider({ children }) {
     setCurrentUpload,
     clearCurrentUpload,
     getUploadById,
-    getRealStatus
+    getRealStatus,
+    refreshUploadsForProject
   };
 
   return (

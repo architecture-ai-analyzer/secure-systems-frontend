@@ -1,5 +1,7 @@
 // Mock data for generating comprehensive technical reports
 
+import { PROCESSING_STATUS } from '../utils/constants';
+
 const COMPONENT_TYPES = [
   'Web Server', 'Load Balancer', 'Database', 'Cache', 'Message Queue',
   'API Gateway', 'Microservice', 'Mobile App', 'Frontend SPA', 'CDN'
@@ -79,7 +81,7 @@ export class MockApiService {
         id: 'mock-completed-architecture-1',
         fileName: 'arquitetura-ecommerce-v1.pdf',
         fileSize: 2_458_624,
-        status: 'Analisado',
+        status: PROCESSING_STATUS.ANALISADO,
         createdAt,
         updatedAt
       }
@@ -209,8 +211,8 @@ export class MockApiService {
     
     return {
       id: uploadId,
-      status: 'Em processamento',
-      progress: Math.floor(Math.random() * 100),
+      uploadId,
+      status: PROCESSING_STATUS.EM_PROCESSAMENTO,
       estimatedTimeRemaining: '2 minutos',
       currentStep: 'Analisando componentes de arquitetura...'
     };
