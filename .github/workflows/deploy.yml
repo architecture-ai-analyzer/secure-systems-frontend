@@ -105,6 +105,7 @@ jobs:
         if: github.event_name != 'pull_request'
         env:
           VITE_API_URL: ${{ steps.terraform.outputs.gateway_api_base_url }}
+          VITE_REPORT_API_URL: ${{ steps.terraform.outputs.gateway_api_base_url }}
         run: npm run build
 
       - name: Upload to S3
